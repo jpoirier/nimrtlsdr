@@ -10,11 +10,8 @@ else:
     const rtlsdr_lib = "librtlsdr.so"
 
 
-# type
-#     SamplingMode: int
-
 const
-    # default parameter settings
+    ## Default parameter settings
     Dflt_GAIN* = "auto"
     DfltFc* = 80e6
     DfltRs* = 1.024e6
@@ -68,14 +65,14 @@ type
         ctx*: pdev_t
 
 type
-  read_async_cb_t* = proc (buf: ptr uint8; len: uint32; ctx: pointer) {.cdecl.}
+    read_async_cb_t* = proc (buf: ptr uint8; len: uint32; ctx: pointer) {.cdecl.}
 
 const
-    gains_list: array[18, int] = [-10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
-                            240, 290, 340, 420, 430, 450, 470, 490]
+    gains_list*: array[18, int] = [-10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
+                                    240, 290, 340, 420, 430, 450, 470, 490]
+
 
 include "cdecl.nim"
-
 
 proc GetDeviceCount*(): int =
     ## *Returns*: the number of valid USB dongles detected
@@ -83,7 +80,7 @@ proc GetDeviceCount*(): int =
 
 proc GetDeviceName*(index: int): string =
     ## *Returns*: the name of the USB device for index.
-    ## E.g. an "index" returned from calling GainValues.
+    ## E.g. an index returned from calling GainValues.
     return $(get_device_name(cast[uint32](index)))
 
 
@@ -106,7 +103,7 @@ proc GetIndexBySerial*(serial: string): tuple[index: int, err: Error] =
     else:
         result.err = cast[Error](result.index)
 
-proc Open(index: int): tuple[dev: Context, err: Error] =
+proc OpenDev(index: int): tuple[dev: Context, err: Error] =
     ## *Returns*: a device construct for index and 0 on success
     result.err = cast[Error](rtlsdr_open(addr(result.dev.ctx), cast[uint32](index)))
 
@@ -116,7 +113,8 @@ proc Close*(dev: Context): Error =
     ## *Returns*: 0 on success
     return cast[Error](rtlsdr_close(dev.ctx))
 
-# configuration functions
+
+## configuration functions
 
 proc SetXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     ## Sets the crystal oscillator frequencies for the RTL2832 and the tuner IC.
@@ -147,13 +145,15 @@ proc GetUsbStrings*(dev: Context, index: int): tuple[manufact, product, serial: 
                             cast[ptr char](addr(p[0])),cast[ptr char](addr(s[0])))
     ($m, $p, $s, cast[Error](e))
 
-# TODO(jdp): can seem to use openarray here
-# WriteEeprom writes data to the EEPROM.
-#
-# data = buffer of data to be written, offset = address where the data should be written,
-# leng = length of the data
-# proc WriteEeprom*(dev: Context, data: openarray[uint8], offset: uint8): Error =
-#     return cast[Error](write_eeprom(dev.ctx, cast[ptr uint8](addr(data[0])), offset, cast[uint16](data.len)))
+proc WriteEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
+    ## Write data to the EEPROM.
+    ##
+    ## *Arguments*:
+    ## - ``data``: the data to be written
+    ## - ``offset``: the address where the data is to be written
+    ##
+    ## *Returns*: 0 on success
+    return cast[Error](write_eeprom(dev.ctx, cast[ptr uint8](addr(data)), offset, cast[uint16](data.len)))
 
 proc ReadEeprom*(dev: Context, offset: uint8, length: uint16): tuple[data: seq[uint8], cnt: int, err: Error] =
     ## Reads data from the EEPROM.
@@ -201,8 +201,7 @@ proc GetTunerType*(dev: Context): rtlsdr_tuner =
 
 proc GetTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
     ## *Returns*: a list of gains, in tenths of dB, supported by the tuner
-    ## and 0 on success
-    ## E.g. 115 means 11.5 dB.
+    ## and 0 on success. E.g. 115 means 11.5 dB.
     result.err = Success
     var i = cast[int](get_tuner_gains(dev.ctx, cast[ptr int](0)))
     if i < 0:
@@ -219,8 +218,8 @@ proc SetTunerGain*(dev: Context, gain: int): Error =
     ##
     ## Valid gain values (in tenths of a dB, where 115 means 11.5 dB) for the
     ## tuner are:
-    ##      -10, 15, 40, 65, 90, 115, 140, 165, 190, 215, 240, 290,
-    ##      340, 420, 430, 450, 470, 490
+    ##      -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
+    ##      240, 290, 340, 420, 430, 450, 470, 490
     ##
     ## *Returns*: 0 on success
     if gain in gains_list:
@@ -303,7 +302,8 @@ proc GetOffsetTuning*(dev: Context): tuple[enabled: bool, err: Error] =
         result.err = ErrorOffsetTuningMode
     result.enabled = cast[bool](i)
 
-# streaming functions
+
+## streaming functions
 
 proc ResetBuffer*(dev: Context): Error =
     ##
