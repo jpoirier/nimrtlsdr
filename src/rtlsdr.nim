@@ -1,11 +1,11 @@
 # See license.txt for usage.
 
 when defined(windows):
-    const rtlsdr_lib* = "rtlsdr.dll"
+    const rtlsdr_lib = "rtlsdr.dll"
 elif defined(macosx):
-    const rtlsdr_lib* = "librtlsdr.dylib"
+    const rtlsdr_lib = "librtlsdr.dylib"
 else:
-    const rtlsdr_lib* = "librtlsdr.so"
+    const rtlsdr_lib = "librtlsdr.so"
 
 
 # include "cdecl.nim"
