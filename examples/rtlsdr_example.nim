@@ -1,156 +1,159 @@
 # See license.txt for usage.
 
 import strutils
+import threadpool
 import logging as log
 import rtlsdr
 
+type
+    TMsg = object
+        s: bool
 
-# proc rtlsdr_cb(buf []byte, userctx *rtl.UserCtx)
-#     log.info("Length of async-read buffer: %d", len(buf))
-#     if c, ok := (*userctx).(chan bool); ok {
-#         c <- true // async-read done signal
+type
+    PChan = ptr TChannel[TMsg]
 
-# proc async_stop(dev *rtl.Context, c chan bool)
-# 	<-c // async-read done signal
+proc rtlsdr_cb(buf: ptr uint8, len: uint32, userctx: UserCtx) =
+    ## The rtlsdr callback function.
+    ##
+    ## First, print out the data buffer length, then send
+    ## a "done" message over the channel.
+    log.info("Length of async-read buffer - ", $len)
+    var m: TMsg
+    m.s = true
+    var ch: PChan = cast[PChan](userctx)
+    ch[].send(m)  # done
 
-# 	log.Println("Received async-read done, calling CancelAsync")
-# 	if err := dev.CancelAsync(); err != nil
-# 		log.Println("CancelAsync failed")
-# 	else
-# 		log.Println("CancelAsync successful")
-
-# 	os.Exit(0)
-
-
-# func sig_abort(dev *rtl.Context) {
-# 	ch := make(chan os.Signal)
-# 	signal.Notify(ch, syscall.SIGINT)
-# 	<-ch
-# 	_ = dev.CancelAsync()
-# 	dev.Close()
-# 	os.Exit(0)
-# }
+proc async_stop(s: tuple[dev: Context, ch: PChan]) {.thread.} =
+    ## Pends for a "done" message, once received,
+    ## cancels the async callback and returns.
+    discard s.ch[].recv()
+    log.info("Received async-read done, calling CancelAsync")
+    var err = s.dev.CancelAsync()
+    if ord(err) != 0:
+        log.info("CancelAsync failed - ", err)
+    else:
+        log.info("CancelAsync successful...")
 
 proc main() =
-	var err: Error
-	var dev: Context
-
     var c = GetDeviceCount()
     if c == 0 :
-		log.fatal("No devices found, exiting.")
+        log.fatal("No devices found, exiting.")
     else:
-        for i = 0; i < c; i++:
-            let (m, p, s, err) = GetDeviceUsbStrings(i)
-            log.info("GetDeviceUsbStrings $1 - $2 $3 $4" % [err, m, p, s])
+        for i in 0..c:
+            let (m, p, s, e) = GetDeviceUsbStrings(i)
+            log.info("GetDeviceUsbStrings $1 - $2 $3 $4" % [$e, m, p, s])
 
-    log.info("===== Device name: $1 =====", rtl.GetDeviceName(0))
-    log.info("===== Running tests using device indx: $1 =====", $0)
+    log.info("===== Device name: $1 =====" % GetDeviceName(0))
+    log.info("===== Running tests using device index: 0 =====")
 
-    var o = OpenDev(0)
-	if ord(o.err) != 0:
-		log.fatal("\tError: $1", err)
+    var openedDev = OpenDev(0)
+    if ord(openedDev.err) != 0:
+        log.fatal("\tOpenDev failed - ", openedDev.err)
 
-    dev = o.dev
-	defer: dev.Close()
-	# go sig_abort(dev)
+    var dev = openedDev.dev
+    defer: discard dev.Close()
 
     # m, p, s, err
-    var strs = dev.GetUsbStrings()
-    if ord(strs.err) != 0:
-        log.info("\tGetUsbStrings Failed - error: %s\n", strs.err)
-    else:
-        log.info("\tGetUsbStrings - %s %s %s\n", strs.m, strs.p, strs.s)
+    # var strs = dev.GetUsbStrings()
+    # if ord(strs.err) != 0:
+    #     log.info("\tGetUsbStrings error - ", strs.err)
+    # else:
+    #     log.info("\tGetUsbStrings - $1, $2, $3\n", strs.m, strs.p, strs.s)
 
     # g, err
-    var gains = dev.GetTunerGains()
-    if ord(gains.err) != 0:
-        log.info("\tGetTunerGains Failed - error: %s\n", err)
+    var g = dev.GetTunerGains()
+    if ord(g.err) != 0:
+        log.info("\tGetTunerGains error - ", g.err)
     else:
-        gains := fmt.Sprintf("\tGains: ")
-		for _, j := range g
-			gains += fmt.Sprintf("%d ", j)
-		log.info("%s\n", gains)
+        log.info("\tGains: ")
+        log.info($g.gains)
 
-    var err = dev.SetSampleRate(DefaultSampleRate)
+    var err = dev.SetSampleRate(DfltSampleRate)
     if ord(err) != 0:
-        log.info("\tSetSampleRate Failed - error: ", err)
+        log.info("\tSetSampleRate error - ", err)
     else:
-        log.info("\tSetSampleRate - rate: ", DefaultSampleRate)
-    log.info("\tGetSampleRate: $1\n", $dev.GetSampleRate())
+        log.info("\tSetSampleRate rate: ", $DfltSampleRate)
 
-	# status = dev.SetXtalFreq(rtl_freq, tuner_freq)
-	# log.info("\tSetXtalFreq %s - Center freq: %d, Tuner freq: %d\n",
-	# 	rtl.Status[status], rtl_freq, tuner_freq)
+    log.info("\tGetSampleRate: ", $dev.GetSampleRate())
+
+    # status = dev.SetXtalFreq(rtl_freq, tuner_freq)
+    # log.info("\tSetXtalFreq %s - Center freq: %d, Tuner freq: %d\n",
+    # 	rtl.Status[status], rtl_freq, tuner_freq)
 
     # rtl_freq, tuner_freq, err
     var xtalFreq = dev.GetXtalFreq()
     if ord(xtalFreq.err) != 0:
-        log.info("\tGetXtalFreq Error: ", xtalFreq.err)
+        log.info("\tGetXtalFreq error - ", xtalFreq.err)
     else:
         log.info("\tGetXtalFreq - Rtl: $1, Tuner: $2" % [$xtalFreq.rtl_freq, $xtalFreq.tuner_freq])
 
     err = dev.SetCenterFreq(850000000)
     if ord(err) != 0:
-		log.info("\tSetCenterFreq 850MHz Failed, error: ", err)
-    else
-        log.info("\tSetCenterFreq 850MHz Successful")
+        log.info("\tSetCenterFreq 850MHz error - ", err)
+    else:
+        log.info("\tSetCenterFreq 850MHz successful...")
 
-    log.info("\tGetCenterFreq: ", dev.GetCenterFreq())
-    log.info("\tGetFreqCorrection: ", dev.GetFreqCorrection())
-    log.info("\tGetTunerType: ", dev.GetTunerType())
+    log.info("\tGetCenterFreq: ", $dev.GetCenterFreq())
+    log.info("\tGetFreqCorrection: ", $dev.GetFreqCorrection())
+    log.info("\tGetTunerType: ", $dev.GetTunerType())
     err = dev.SetTunerGainMode(false)
     if ord(err) != 0:
-        log.info("\tSetTunerGainMode Failed - error: ", err)
-    else
-        log.info("\tSetTunerGainMode Successful\n")
+        log.info("\tSetTunerGainMode error - ", err)
+    else:
+        log.info("\tSetTunerGainMode successful...")
 
-    log.info("\tGetTunerGain: %d\n", dev.GetTunerGain())
+    log.info("\tGetTunerGain: ", $dev.GetTunerGain())
 
-	#func SetFreqCorrection(ppm int) (err int)
-	#func SetTunerGain(gain int) (err int)
-	#func SetTunerIfGain(stage, gain int) (err int)
-	#func SetAgcMode(on int) (err int)
-	#func SetDirectSampling(on int) (err int)
+    #func SetFreqCorrection(ppm int) (err int)
+    #func SetTunerGain(gain int) (err int)
+    #func SetTunerIfGain(stage, gain int) (err int)
+    #func SetAgcMode(on int) (err int)
+    #func SetDirectSampling(on int) (err int)
 
-     err = dev.SetTestMode(true)
-    if ord(err) == 0 {
-        log.info("\tSetTestMode 'On' Successful")
-    else
-        log.info("\tSetTestMode 'On' Failed - error: ", err)
+    err = dev.SetTestMode(true)
+    if ord(err) == 0:
+        log.info("\tSetTestMode 'On' successful...")
+    else:
+        log.info("\tSetTestMode 'On' error - ", err)
 
     err = dev.ResetBuffer()
     if ord(err) == 0:
-        log.info("\tResetBuffer Successful\n")
-    else
-        log.info("\tResetBuffer Failed - error: %s\n", err)
+        log.info("\tResetBuffer successful...\n")
+    else:
+        log.info("\tResetBuffer error - ", err)
 
-    var (buffer, n_read, e) = dev.ReadSync(DefaultBufLength)
+    var (b, n_read, e) = dev.ReadSync(DfltBufLen)
     if ord(err) != 0:
         log.info("\tReadSync Failed - error: ", e)
     else:
-        log.info("\tReadSync ", $n_read)
+        log.info("\tReadSync num read - ", $n_read)
 
-        if n_read < rtl.DefaultBufLength:
-            log.info("ReadSync short read, $1 samples lost\n" % $(DefaultBufLength-n_read))
+        if n_read < DfltBufLen:
+            log.info("ReadSync short read, $1 samples lost\n", $(DfltBufLen-n_read))
 
     err = dev.SetTestMode(false)
     if ord(err) == 0:
-        log.info("\tSetTestMode 'Off' Successful")
-    else
-        log.info("\tSetTestMode 'Off' Fail - error: ", err)
+        log.info("\tSetTestMode 'Off' successful...")
+    else:
+        log.info("\tSetTestMode 'Off' error - ", err)
 
     # Note, ReadAsync blocks until CancelAsync is called, so spawn
     # a goroutine running in its own system thread that'll wait
     # for the async-read callback to signal when it's done.
-    IQch := make(chan bool)
-    go async_stop(dev, IQch)
-    var userctx rtl.UserCtx = IQch
-    err = dev.ReadAsync(rtlsdr_cb, &userctx, DefaultAsyncBufNumber, DefaultBufLength)
-    if ord(err) == 0:
-        log.info("\tReadAsync Successful")
-    else
-        log.info("\tReadAsync Fail - error: ", err)
+    var m: TMsg
+    m.s = true
+    var ch: TChannel[TMsg]
+    var userctx: UserCtx = cast[UserCtx](addr(ch))
+    createThread(async_stop, (dev, addr(ch))
+    err = dev.ReadAsync(cast[read_async_cb_t](rtlsdr_cb), userctx, DfltAsyncBufNum, DfltBufLen)
+    if ord(err) != 0:
+        log.info("\tReadAsync call error - ", err)
+        ch.send(m)
+    else:
+        log.info("\tReadAsync call successful...")
 
-    log.info("Exiting...\n")
+    sync()
+    close(ch)
+    log.info("Exiting...")
 
 main()

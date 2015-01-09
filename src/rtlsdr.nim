@@ -10,6 +10,8 @@ else:
     const rtlsdr_lib = "librtlsdr.so"
 
 
+type UserCtx* = pointer
+
 const
     ## Default parameter settings
     Dflt_GAIN* = "auto"
@@ -103,7 +105,7 @@ proc GetIndexBySerial*(serial: string): tuple[index: int, err: Error] =
     else:
         result.err = cast[Error](result.index)
 
-proc OpenDev(index: int): tuple[dev: Context, err: Error] =
+proc OpenDev*(index: int): tuple[dev: Context, err: Error] =
     ## *Returns*: a device construct for index and 0 on success
     result.err = cast[Error](rtlsdr_open(addr(result.dev.ctx), cast[uint32](index)))
 
@@ -129,7 +131,7 @@ proc SetXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     ## *Returns*: 0 on success
     return cast[Error](set_xtal_freq(dev.ctx, cast[uint32](rtl_freq), cast[uint32](tuner_freq)))
 
-proc GetXtalFreq(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
+proc GetXtalFreq*(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
     ## *Returns*: the crystal oscillator frequencies for the RTL2832 and the
     ## tuner IC ## *Returns*: 0 on success
     ##
@@ -314,7 +316,7 @@ proc ReadSync*(dev: Context, length: int): tuple[buf: seq[char], n_read: int, er
     result.buf = newseq[char](length)
     result.err = cast[Error](read_sync(dev.ctx, cast[ptr char](addr(result.buf)), length, cast[ptr int](addr(result.n_read))))
 
-proc ReadAsync*(dev: Context, f: read_async_cb_t, userctx: pointer, buf_num, buf_len: int): Error =
+proc ReadAsync*(dev: Context, f: read_async_cb_t, userctx: UserCtx, buf_num, buf_len: int): Error =
     ## Reads samples from the device asynchronously. This function blocks
     ## until canceled via CancelAsync
     ##
