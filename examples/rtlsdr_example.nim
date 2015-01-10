@@ -4,30 +4,27 @@ import strutils
 import threadpool
 import rtlsdr
 
-type TMsg = object
+type Msg = object
     s: bool
 
-type PChan = ptr TChannel[TMsg]
+var chan: TChannel[Msg]
 
-var chan: TChannel[TMsg]
-
-proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPointer) {.fastcall.} =
+proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
     ## The rtlsdr callback function.
     var first {.global.}: bool = false
     if first == false:
         first = true
-        var m: TMsg
-        m.s = true
-        var pch: PChan = cast[PChan](ctx)
-        pch[].send(m)  # Send a ping to async_stop
+        var msg: Msg
+        msg.s = true
+        chan.send(msg)  # Send a ping to asyncStop
     echo("Length of async-read buffer - ", $len)
 
-proc asyncStop(dev: Context, ch: PChan) =
-    echo("async_stop started...")
+proc asyncStop(dev: Context) =
+    echo("asyncStop running...")
     ## Pends for a ping from the rtlsdr callback,
     ## and when received it cancels the async callback.
-    discard ch[].recv()
-    echo("Received async-read done, calling CancelAsync")
+    discard chan.recv()
+    echo("Received ping from rtlsdrCb, calling cancelAsync")
     var err = dev.cancelAsync()
     if ord(err) != 0:
         echo("CancelAsync failed - ", err)
@@ -40,7 +37,7 @@ proc main() =
         echo("No devices found, exiting.")
         return
     else:
-        for i in 0..(c-1):
+        for i in 0..(cnt-1):
             let (m, p, s, e) = getDeviceUsbStrings(i)
             echo("getDeviceUsbStrings $1, $2, $3, $4" % [m, p, s, $e])
 
@@ -68,11 +65,11 @@ proc main() =
         echo("\tGains: ")
         echo($g.gains)
 
-    var err = dev.setSampleRate(DfltSampleRate)
+    var err = dev.setSampleRate(dfltSampleRate)
     if err != Error.NoError:
         echo("\tsetSampleRate error - ", err)
     else:
-        echo("\tsetSampleRate rate: ", $DfltSampleRate)
+        echo("\tsetSampleRate rate: ", $dfltSampleRate)
 
     echo("\tgetSampleRate: ", $dev.getSampleRate())
 
@@ -125,13 +122,13 @@ proc main() =
     else:
         echo("\tresetBuffer error - ", err)
 
-    let (b, n_read, e) = dev.readSync(DfltBufLen)
-    if err != Error.NoError:
+    let (b, nRead, e) = dev.readSync(dfltBufLen)
+    if e != Error.NoError:
         echo("\treadSync Failed - error: ", e)
     else:
-        echo("\treadSync num read - ", $n_read)
-        if n_read < DfltBufLen:
-            echo("readSync short read, $1 samples lost\n" % $(DfltBufLen-n_read))
+        echo("\treadSync num read - ", $nRead)
+        if nRead < dfltBufLen:
+            echo("readSync short read, $1 samples lost\n" % $(dfltBufLen-nRead))
 
     err = dev.setTestMode(false)
     if err == Error.NoError:
@@ -142,25 +139,24 @@ proc main() =
     # ReadAsync blocks until CancelAsync is called, so spawn
     # a thread that'll wait for the async-read callback to send a
     # ping once it has started.
-    var m: TMsg
-    m.s = true
-    var ch: TChannel[TMsg]
-    open(ch)
-    spawn asyncStop(dev, addr(ch))
+    var msg: Msg
+    msg.s = true
+    open(chan)
+    spawn asyncStop(dev)
 
-    var userCtx: UserCtxPtr = cast[UserCtxPtr](addr(ch))
+    var userCtx: UserCtxPtr = nil
     err = dev.readAsync(cast[readAsyncCbProc](rtlsdrCb),
                         userCtx,
-                        DfltAsyncBufNum,
-                        DfltBufLen)
+                        dfltAsyncBufNum,
+                        dfltBufLen)
     if err != Error.NoError:
         echo("\treadAsync call error - ", err)
-        ch.send(m)
+        chan.send(msg)
     else:
         echo("\treadAsync call successful...")
 
     sync()
-    closeDev(ch)
+    close(chan)
     echo("Exiting...")
 
 main()

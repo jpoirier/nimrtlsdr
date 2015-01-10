@@ -128,7 +128,8 @@ proc setXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     ##
     ## *Returns*: 0 on success
     return cast[Error](rtlsdr_set_xtal_freq(dev.ctx,
-        cast[uint32](rtl_freq), cast[uint32](tuner_freq)))
+                                            cast[uint32](rtl_freq),
+                                            cast[uint32](tuner_freq)))
 
 proc getXtalFreq*(dev: Context):
     tuple[rtl_freq, tuner_freq: int, err: Error] =
@@ -136,9 +137,10 @@ proc getXtalFreq*(dev: Context):
     ## tuner IC ## *Returns*: 0 on success
     ##
     ## Usually both ICs use the same clock. Frequency values are in Hz.
-    result.err = cast[Error](rtlsdr_get_xtal_freq(dev.ctx,
-        cast[ptr uint32](addr(result.rtl_freq)),
-        cast[ptr uint32](addr(result.tuner_freq))))
+    result.err = cast[Error](rtlsdr_get_xtal_freq(
+                                    dev.ctx,
+                                    cast[ptr uint32](addr(result.rtl_freq)),
+                                    cast[ptr uint32](addr(result.tuner_freq))))
 
 proc getUsbStrings*(dev: Context):
     tuple[manufact, product, serial: string, err: Error] =
@@ -158,9 +160,9 @@ proc writeEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
     ##
     ## *Returns*: 0 on success
     return cast[Error](rtlsdr_write_eeprom(dev.ctx,
-        cast[ptr uint8](addr(data)),
-        offset,
-        cast[uint16](data.len)))
+                                            cast[ptr uint8](addr(data)),
+                                            offset,
+                                            cast[uint16](data.len)))
 
 proc readEeprom*(dev: Context, offset: uint8, length: uint16):
     tuple[data: seq[uint8], cnt: int, err: Error] =
@@ -256,7 +258,7 @@ proc setTunerGainMode*(dev: Context, manualMode: bool): Error =
     ##
     ## *Returns*: 0 on success
     result = cast[Error](rtlsdr_set_tuner_gain_mode(dev.ctx,
-        cast[int](manualMode)))
+                                                    cast[int](manualMode)))
 
 proc setSampleRate*(dev: Context, rate: int): Error =
     ## Selects the baseband filters according to the sample rate in Hz
