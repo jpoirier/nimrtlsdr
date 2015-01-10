@@ -14,53 +14,53 @@ type UserCtx* = pointer
 
 const
     ## Default parameter settings
-    Dflt_GAIN* = "auto"
-    DfltFc* = 80e6
-    DfltRs* = 1.024e6
-    DfltReadSz* = 1024
-    CrystalFreq* = 28800000
-    DfltSampleRate* = 2048000
-    DfltAsyncBufNum* = 15
-    DfltBufLen* = (16 * 32)
-    MinBufLen* = 512
-    MaxBufLen* = (256 * 16384)
+    dflt_GAIN* = "auto"
+    dfltFc* = 80e6
+    dfltRs* = 1.024e6
+    dfltReadSz* = 1024
+    crystalFreq* = 28800000
+    dfltSampleRate* = 2048000
+    dfltAsyncBufNum* = 15
+    dfltBufLen* = (16 * 32)
+    minBufLen* = 512
+    maxBufLen* = (256 * 16384)
 
 type
     Error* {.size: sizeof(int).} = enum
-        ErrorOffsetTuningMode = (-13, "getting offset tuning mode")
-        ErrorNotSupported = (-12, "operation not supported or unimplemented on this platform")
-        ErrorNoMem = (-11, "insufficient memory")
-        ErrorInterrupted = (-10, "system call interrupted (perhaps due to signal)")
-        ErrorPipe = (-9, "pipe error")
-        ErrorOverflow = (-8, "overflow")
-        ErrorTimeout = (-7, "operation timed out")
-        ErrorBusy = (-6, "resource busy")
-        ErrorNotFound = (-5, "entity not found")
-        ErrorNoDevice = (-4, "no such device (it may have been disconnected)")
-        ErrorAccess = (-3, "access denied (insufficient permissions)")
-        ErrorInvalidParam = (-2, "invalid parameter(s)")
-        ErrorIo = (-1, "input/output error")
-        None = (0, "no error")
+        errorOffsetTuningMode = (-13, "getting offset tuning mode")
+        errorNotSupported = (-12, "operation not supported or unimplemented on this platform")
+        errorNoMem = (-11, "insufficient memory")
+        errorInterrupted = (-10, "system call interrupted (perhaps due to signal)")
+        errorPipe = (-9, "pipe error")
+        errorOverflow = (-8, "overflow")
+        errorTimeout = (-7, "operation timed out")
+        errorBusy = (-6, "resource busy")
+        errorNotFound = (-5, "entity not found")
+        errorNoDevice = (-4, "no such device (it may have been disconnected)")
+        errorAccess = (-3, "access denied (insufficient permissions)")
+        errorInvalidParam = (-2, "invalid parameter(s)")
+        errorIo = (-1, "input/output error")
+        none = (0, "no error")
 
 type
     RtlSdrTuner* {.size: sizeof(int).} = enum
-        TUNER_UNKNOWN = (0, "TUNER_UNKNOWN")
-        TUNER_E4000 = (1, "TUNER_E4000")
-        TUNER_FC0012 = (2, "TUNER_FC0012")
-        TUNER_FC0013 = (3, "TUNER_FC0013")
-        TUNER_FC2580 = (4, "TUNER_FC2580")
-        TUNER_R820T = (5, "TUNER_R820T")
-        TUNER_R828D = (6, "TUNER_R828D")
+        tunerUknown = (0, "TUNER_UNKNOWN")
+        tunerE4000 = (1, "TUNER_E4000")
+        tunerFC0012 = (2, "TUNER_FC0012")
+        tunerFC0013 = (3, "TUNER_FC0013")
+        tunerFC2580 = (4, "TUNER_FC2580")
+        tunerR820T = (5, "TUNER_R820T")
+        tunerR828D = (6, "TUNER_R828D")
 
 type
     SamplingState* {.size: sizeof(int).} = enum
-        SamplingNone = (0, "None")
-        SamplingIADC = (1, "IADC")
-        SamplingQADC = (2, "QADC")
+        samplingNone = (0, "None")
+        samplingIADC = (1, "IADC")
+        samplingQADC = (2, "QADC")
 
 type
     pdev_t* = ptr dev_t
-    dev_t*{.final.} = object
+    devObj* {.final.} = object
 
 type
     Context* = object of RootObj
@@ -99,7 +99,7 @@ proc getIndexBySerial*(serial: string): tuple[index: int, err: Error] =
     ## *Returns*: the device index for USB string serial and 0 on success
     result.index = get_index_by_serial(serial)
     if result.index >= 0:
-        result.err = None
+        result.err = none
     else:
         result.err = cast[Error](result.index)
 
@@ -172,7 +172,7 @@ proc readEeprom*(dev: Context, offset: uint8, length: uint16): tuple[data: seq[u
     var e = read_eeprom(dev.ctxObj, addr(result.data[0]), offset, length)
     result.cnt = e
     if e >= 0:
-        result.err = None
+        result.err = none
     else:
         result.err = cast[Error](e)
 
@@ -204,7 +204,7 @@ proc getTunerType*(dev: Context): RtlSdrTuner =
 proc getTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
     ## *Returns*: a list of gains, in tenths of dB, supported by the tuner
     ## and 0 on success. E.g. 115 means 11.5 dB.
-    result.err = None
+    result.err = none
     var i = cast[int](get_tuner_gains(dev.ctxObj, cast[ptr int](0)))
     if i < 0:
         result.err = cast[Error](i)
@@ -225,7 +225,7 @@ proc setTunerGain*(dev: Context, gain: int): Error =
     ##
     ## *Returns*: 0 on success
     if gain notin gains_list:
-        return ErrorInvalidParam
+        return errorInvalidParam
     return cast[Error](set_tuner_gain(dev.ctxObj, gain))
 
 proc getTunerGain*(dev: Context): int =
@@ -298,10 +298,10 @@ proc setOffsetTuning*(dev: Context, enable: bool): Error =
 
 proc getOffsetTuning*(dev: Context): tuple[enabled: bool, err: Error] =
     ## *Returns*: the state of the offset tuning mode
-    result.err = None
+    result.err = none
     var i = get_offset_tuning(dev.ctxObj)
     if i == -1:
-        result.err = ErrorOffsetTuningMode
+        result.err = errorOffsetTuningMode
     result.enabled = cast[bool](i)
 
 
