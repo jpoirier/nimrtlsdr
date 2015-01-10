@@ -68,7 +68,7 @@ proc main() =
         echo("\tGetTunerGains error - ", g.err)
     else:
         echo("\tGains: ")
-        echo($g.gains[0])
+        echo($g.gains)
 
     var err = dev.SetSampleRate(DfltSampleRate)
     if err != Error.None:
@@ -78,9 +78,11 @@ proc main() =
 
     echo("\tGetSampleRate: ", $dev.GetSampleRate())
 
-    # status = dev.SetXtalFreq(rtl_freq, tuner_freq)
-    # echo("\tSetXtalFreq %s - Center freq: %d, Tuner freq: %d\n",
-    # 	rtl.Status[status], rtl_freq, tuner_freq)
+    # err = dev.SetXtalFreq(rtl_freq, tuner_freq)
+    # if err != Error.None:
+    #     echo("\SetXtalFreq error - ", err)
+    # else:
+    #     echo("\SetXtalFreq center freq: $1, Tuner freq: $2" % [rtl_freq, tuner_freq])
 
     # rtl_freq, tuner_freq, err
     var xtalFreq = dev.GetXtalFreq()
@@ -97,7 +99,7 @@ proc main() =
 
     echo("\tGetCenterFreq: ", $dev.GetCenterFreq())
     echo("\tGetFreqCorrection: ", $dev.GetFreqCorrection())
-    echo("\tGetTunerType: ", $dev.GetTunerType())
+    echo("\tGetTunerType: ", dev.GetTunerType())
 
     err = dev.SetTunerGainMode(false)
     if err != Error.None:
@@ -107,11 +109,11 @@ proc main() =
 
     echo("\tGetTunerGain: ", $dev.GetTunerGain())
 
-    #func SetFreqCorrection(ppm int) (err int)
-    #func SetTunerGain(gain int) (err int)
-    #func SetTunerIfGain(stage, gain int) (err int)
-    #func SetAgcMode(on int) (err int)
-    #func SetDirectSampling(on int) (err int)
+    # SetFreqCorrection(ppm: int): Error
+    # SetTunerGain(gain: int): Error
+    # SetTunerIfGain(stage, gain: int): Error
+    # SetAgcMode(on: bool): Error
+    # SetDirectSampling(on: bool): Error
 
     err = dev.SetTestMode(true)
     if err == Error.None:
@@ -125,9 +127,6 @@ proc main() =
     else:
         echo("\tResetBuffer error - ", err)
 
-    # discard dev.ReadSync(DfltBufLen)
-    # if true:
-    #     return
     let (b, n_read, e) = dev.ReadSync(DfltBufLen)
     if err != Error.None:
         echo("\tReadSync Failed - error: ", e)
@@ -142,22 +141,16 @@ proc main() =
     else:
         echo("\tSetTestMode 'Off' error - ", err)
 
-    # Note, ReadAsync blocks until CancelAsync is called, so spawn
-    # a goroutine running in its own system thread that'll wait
-    # for the async-read callback to signal when it's done.
+    # ReadAsync blocks until CancelAsync is called, so spawn
+    # a thread that'll wait for the async-read callback to send a
+    # ping once it has started.
     var m: TMsg
     m.s = true
     var ch: TChannel[TMsg]
     open(ch)
-    # open(chan)
-    var userctx: UserCtx = cast[UserCtx](addr(ch))
-    # var userctx: UserCtx = cast[UserCtx](addr(chan))
-
-    # var thr: TThread[tuple[dev: Context, ch: PChan]]
-    # createThread(thr, async_stop, (dev, addr(ch)))
     spawn async_stop(dev, addr(ch))
-    # spawn async_stop(dev, addr(chan))
 
+    var userctx: UserCtx = cast[UserCtx](addr(ch))
     err = dev.ReadAsync(cast[read_async_cb_t](rtlsdr_cb),
                         userctx,
                         DfltAsyncBufNum,
@@ -165,7 +158,6 @@ proc main() =
     if err != Error.None:
         echo("\tReadAsync call error - ", err)
         ch.send(m)
-        # chan.send(m)
     else:
         echo("\tReadAsync call successful...")
 

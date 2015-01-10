@@ -76,6 +76,7 @@ const
 
 include "cdecl.nim"
 
+
 proc GetDeviceCount*(): int =
     ## *Returns*: the number of valid USB dongles detected
     return cast[int](get_device_count())
@@ -91,10 +92,7 @@ proc GetDeviceUsbStrings*(index: int): tuple[manufact, product, serial: string, 
     var m: array[0..257, char]
     var p: array[0..257, char]
     var s: array[0..257, char]
-    var e = get_device_usb_strings(cast[uint32](index),
-                                    addr(m[0]),
-                                    addr(p[0]),
-                                    addr(s[0]))
+    var e = get_device_usb_strings(cast[uint32](index), addr(m[0]), addr(p[0]), addr(s[0]))
     ($m, $p, $s, cast[Error](e))
 
 proc GetIndexBySerial*(serial: string): tuple[index: int, err: Error] =
@@ -136,15 +134,16 @@ proc GetXtalFreq*(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
     ## tuner IC ## *Returns*: 0 on success
     ##
     ## Usually both ICs use the same clock. Frequency values are in Hz.
-    result.err = cast[Error](get_xtal_freq(dev.ctx, cast[ptr uint32](addr(result.rtl_freq)), cast[ptr uint32](addr(result.tuner_freq))))
+    result.err = cast[Error](get_xtal_freq(dev.ctx,
+                                        cast[ptr uint32](addr(result.rtl_freq)),
+                                        cast[ptr uint32](addr(result.tuner_freq))))
 
 proc GetUsbStrings*(dev: Context): tuple[manufact, product, serial: string, err: Error] =
     ## *Returns*: dev's USB strings and 0 on success
     var m: array[0..256, char]
     var p: array[0..256, char]
     var s: array[0..256, char]
-    var e = get_usb_strings(dev.ctx, cast[ptr char](addr(m[0])),
-                            cast[ptr char](addr(p[0])),cast[ptr char](addr(s[0])))
+    var e = get_usb_strings(dev.ctx, addr(m[0]), addr(p[0]), addr(s[0]))
     ($m, $p, $s, cast[Error](e))
 
 proc WriteEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
@@ -155,7 +154,10 @@ proc WriteEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
     ## - ``offset``: the address where the data is to be written
     ##
     ## *Returns*: 0 on success
-    return cast[Error](write_eeprom(dev.ctx, cast[ptr uint8](addr(data)), offset, cast[uint16](data.len)))
+    return cast[Error](write_eeprom(dev.ctx,
+                                    cast[ptr uint8](addr(data)),
+                                    offset,
+                                    cast[uint16](data.len)))
 
 proc ReadEeprom*(dev: Context, offset: uint8, length: uint16): tuple[data: seq[uint8], cnt: int, err: Error] =
     ## Reads data from the EEPROM.

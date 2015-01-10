@@ -1,5 +1,5 @@
 [Package]
-name          = "xplm"
+name          = "rtlsdr"
 version       = "0.1.0"
 author        = "Joseph Poirier"
 description   = "Nim wrapper around librtlsdr."
