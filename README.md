@@ -4,7 +4,6 @@ nimrtlsdr
 A Nim wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
 
 
-[![Godoc reference](https://godoc.org/github.com/jpoirier/gortlsdr?status.svg)](https://godoc.org/github.com/jpoirier/gortlsdr)
 
 # Description
 
