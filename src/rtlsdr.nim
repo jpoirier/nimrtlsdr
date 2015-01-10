@@ -170,11 +170,10 @@ proc ReadEeprom*(dev: Context, offset: uint8, length: uint16): tuple[data: seq[u
     ## the data actually read into the buffer, 0 on success
     result.data = newseq[uint8](int(length))
     var e = read_eeprom(dev.ctx, addr(result.data[0]), offset, length)
+    result.cnt = e
     if e >= 0:
-        result.cnt = e
         result.err = None
     else:
-        result.cnt = e
         result.err = cast[Error](e)
 
 proc SetCenterFreq*(dev: Context, freq: int): Error =
