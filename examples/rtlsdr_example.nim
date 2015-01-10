@@ -163,7 +163,6 @@ proc main() =
 
     sync()
     close(ch)
-    # close(chan)
     echo("Exiting...")
 
 main()
