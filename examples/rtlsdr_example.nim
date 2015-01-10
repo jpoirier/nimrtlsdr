@@ -4,16 +4,14 @@ import strutils
 import threadpool
 import rtlsdr
 
-type
-    TMsg = object
-        s: bool
+type TMsg = object
+    s: bool
 
-type
-    PChan = ptr TChannel[TMsg]
+type PChan = ptr TChannel[TMsg]
 
 var chan: TChannel[TMsg]
 
-proc rtlsdrCb*(buf: ptr uint8, len: uint32, ctx: ctxPointer) {.fastcall.} =
+proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPointer) {.fastcall.} =
     ## The rtlsdr callback function.
     var first {.global.}: bool = false
     if first == false:
@@ -37,8 +35,8 @@ proc asyncStop(dev: Context, ch: PChan) =
         echo("CancelAsync successful...")
 
 proc main() =
-    var c = getDeviceCount()
-    if c == 0 :
+    let cnt = getDeviceCount()
+    if cnt == 0 :
         echo("No devices found, exiting.")
         return
     else:
@@ -49,21 +47,21 @@ proc main() =
     echo("===== Device name: $1 =====" % getDeviceName(0))
     echo("===== Running tests using device index: 0 =====")
 
-    var openedDev = openDev(0)
+    let openedDev = openDev(0)
     if openedDev.err != Error.NoError:
         echo("\tOpenDev failed - ", openedDev.err)
         return
 
-    var dev = openedDev.dev
+    let dev = openedDev.dev
     defer: discard dev.closeDev()
 
-    var u = dev.getUsbStrings()
+    let u = dev.getUsbStrings()
     if u.err != Error.NoError:
         echo("\tgetUsbStrings error - ", u.err)
     else:
         echo("\tgetUsbStrings - $1, $2, $3\n" % [u.manufact, u.product, u.serial])
 
-    var g = dev.getTunerGains()
+    let g = dev.getTunerGains()
     if g.err != Error.NoError:
         echo("\tGetTunerGains error - ", g.err)
     else:
@@ -85,7 +83,7 @@ proc main() =
     #     echo("\setXtalFreq center freq: $1, Tuner freq: $2" % [rtl_freq, tuner_freq])
 
     # rtl_freq, tuner_freq, err
-    var xtalFreq = dev.getXtalFreq()
+    let xtalFreq = dev.getXtalFreq()
     if ord(xtalFreq.err) != 0:
         echo("\tgetXtalFreq error - ", xtalFreq.err)
     else:
@@ -150,9 +148,9 @@ proc main() =
     open(ch)
     spawn asyncStop(dev, addr(ch))
 
-    var userctx: UserCtx = cast[UserCtx](addr(ch))
-    err = dev.readAsync(cast[read_async_cb_t](rtlsdrCb),
-                        userctx,
+    var userCtx: UserCtxPtr = cast[UserCtxPtr](addr(ch))
+    err = dev.readAsync(cast[readAsyncCbProc](rtlsdrCb),
+                        userCtx,
                         DfltAsyncBufNum,
                         DfltBufLen)
     if err != Error.NoError:

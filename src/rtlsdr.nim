@@ -9,7 +9,8 @@ elif defined(macosx):
 else:
     const rtlsdr_lib = "librtlsdr.so"
 
-type ctxPointer* = pointer  # user contect
+type UserCtxPtr* = pointer
+    ## User define and explicitly typecast in the user's callback procedure.
 
 const
     ## Default parameter settings
@@ -55,18 +56,20 @@ type SamplingState* {.size: sizeof(int).} = enum
     SamplingQADC = (2, "QADC")
 
 type
-    devObjPtr* = ptr devObj
-    devObj* {.final.} = object
+    DevObjPtr* = ptr DevObj
+    DevObj* {.final.} = object
 
 type Context* = object of RootObj
-    ctx*: devObjPtr
+    ctx*: DevObjPtr
 
 type
-    readAsyncCbProc* = proc (buf: ptr uint8; len: uint32; ctx: ctxPointer) {.fastcall.}
+    readAsyncCbProc* = proc (buf: ptr uint8; len: uint32;
+        userCtx: UserCtxPtr) {.fastcall.}
 
 const
-    gains_list*: array[18, int] = [-10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
-                                    240, 290, 340, 420, 430, 450, 470, 490]
+    Gains_List*: array[18, int] =
+        [-10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
+        240, 290, 340, 420, 430, 450, 470, 490]
 
 
 include "cdecl.nim"
@@ -127,7 +130,8 @@ proc setXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     return cast[Error](rtlsdr_set_xtal_freq(dev.ctx,
         cast[uint32](rtl_freq), cast[uint32](tuner_freq)))
 
-proc getXtalFreq*(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
+proc getXtalFreq*(dev: Context):
+    tuple[rtl_freq, tuner_freq: int, err: Error] =
     ## *Returns*: the crystal oscillator frequencies for the RTL2832 and the
     ## tuner IC ## *Returns*: 0 on success
     ##
@@ -136,7 +140,8 @@ proc getXtalFreq*(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
         cast[ptr uint32](addr(result.rtl_freq)),
         cast[ptr uint32](addr(result.tuner_freq))))
 
-proc getUsbStrings*(dev: Context): tuple[manufact, product, serial: string, err: Error] =
+proc getUsbStrings*(dev: Context):
+    tuple[manufact, product, serial: string, err: Error] =
     ## *Returns*: dev's USB strings and 0 on success
     var m: array[0..256, char]
     var p: array[0..256, char]
@@ -223,7 +228,7 @@ proc setTunerGain*(dev: Context, gain: int): Error =
     ##      240, 290, 340, 420, 430, 450, 470, 490
     ##
     ## *Returns*: 0 on success
-    if gain notin gains_list:
+    if gain notin Gains_List:
         result = InvalidParamError
     else:
         result = cast[Error](rtlsdr_set_tuner_gain(dev.ctx, gain))
@@ -250,10 +255,11 @@ proc setTunerGainMode*(dev: Context, manualMode: bool): Error =
     ## Manual gain mode must be enabled for the gain setter function to work.
     ##
     ## *Returns*: 0 on success
-    result = cast[Error](rtlsdr_set_tuner_gain_mode(dev.ctx, cast[int](manualMode)))
+    result = cast[Error](rtlsdr_set_tuner_gain_mode(dev.ctx,
+        cast[int](manualMode)))
 
 proc setSampleRate*(dev: Context, rate: int): Error =
-    ## Selects the baseband filters according to the requested sample rate in Hz
+    ## Selects the baseband filters according to the sample rate in Hz
     ##
     ## *Returns*: 0 on success
     result = cast[Error](rtlsdr_set_sample_rate(dev.ctx, cast[uint32](rate)))
@@ -310,7 +316,8 @@ proc resetBuffer*(dev: Context): Error =
     ##
     result = cast[Error](rtlsdr_reset_buffer(dev.ctx))
 
-proc readSync*(dev: Context, length: int): tuple[buf: seq[char], nRead: int, err: Error] =
+proc readSync*(dev: Context, length: int): tuple[buf: seq[char],
+    nRead: int, err: Error] =
     ##
     result.buf = newseq[char](length)
     result.err = cast[Error](rtlsdr_read_sync(dev.ctx,
@@ -318,7 +325,8 @@ proc readSync*(dev: Context, length: int): tuple[buf: seq[char], nRead: int, err
         length,
         addr(result.nRead)))
 
-proc readAsync*(dev: Context, f: readAsyncCbProc, ctx: ctxPointer, bufNum, bufLen: int): Error =
+proc readAsync*(dev: Context, f: readAsyncCbProc,
+    userCtx: UserCtxPtr, bufNum, bufLen: int): Error =
     ## Reads samples from the device asynchronously. This function blocks
     ## until canceled via CancelAsync
     ##
@@ -328,8 +336,8 @@ proc readAsync*(dev: Context, f: readAsyncCbProc, ctx: ctxPointer, bufNum, bufLe
     ## default buffer length (16 * 32 * 512).
     ##
     ## *Returns*: 0 on success
-    result = cast[Error](rtlsdr_read_async(dev.ctx, f, ctx, cast[uint32](bufNum),
-        cast[uint32](bufLen)))
+    result = cast[Error](rtlsdr_read_async(dev.ctx, f, userCtx,
+        cast[uint32](bufNum), cast[uint32](bufLen)))
 
 proc cancelAsync*(dev: Context): Error =
     ## Cancels all pending asynchronous operations on the device.
