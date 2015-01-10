@@ -13,14 +13,14 @@ type
 
 var chan: TChannel[TMsg]
 
-proc rtlsdrCb*(buf: ptr uint8, len: uint32, userctx: UserCtx) {.fastcall.} =
+proc rtlsdrCb*(buf: ptr uint8, len: uint32, ctx: ctxPointer) {.fastcall.} =
     ## The rtlsdr callback function.
     var first {.global.}: bool = false
     if first == false:
         first = true
         var m: TMsg
         m.s = true
-        var pch: PChan = cast[PChan](userctx)
+        var pch: PChan = cast[PChan](ctx)
         pch[].send(m)  # Send a ping to async_stop
     echo("Length of async-read buffer - ", $len)
 
@@ -50,7 +50,7 @@ proc main() =
     echo("===== Running tests using device index: 0 =====")
 
     var openedDev = openDev(0)
-    if ord(openedDev.err) != 0:
+    if openedDev.err != Error.NoError:
         echo("\tOpenDev failed - ", openedDev.err)
         return
 
@@ -58,20 +58,20 @@ proc main() =
     defer: discard dev.closeDev()
 
     var u = dev.getUsbStrings()
-    if u.err != Error.None:
+    if u.err != Error.NoError:
         echo("\tgetUsbStrings error - ", u.err)
     else:
         echo("\tgetUsbStrings - $1, $2, $3\n" % [u.manufact, u.product, u.serial])
 
     var g = dev.getTunerGains()
-    if g.err != Error.None:
+    if g.err != Error.NoError:
         echo("\tGetTunerGains error - ", g.err)
     else:
         echo("\tGains: ")
         echo($g.gains)
 
     var err = dev.setSampleRate(DfltSampleRate)
-    if err != Error.None:
+    if err != Error.NoError:
         echo("\tsetSampleRate error - ", err)
     else:
         echo("\tsetSampleRate rate: ", $DfltSampleRate)
@@ -79,7 +79,7 @@ proc main() =
     echo("\tgetSampleRate: ", $dev.getSampleRate())
 
     # err = dev.setXtalFreq(rtl_freq, tuner_freq)
-    # if err != Error.None:
+    # if err != Error.NoError:
     #     echo("\setXtalFreq error - ", err)
     # else:
     #     echo("\setXtalFreq center freq: $1, Tuner freq: $2" % [rtl_freq, tuner_freq])
@@ -92,7 +92,7 @@ proc main() =
         echo("\tgetXtalFreq - Rtl: $1, Tuner: $2" % [$xtalFreq.rtl_freq, $xtalFreq.tuner_freq])
 
     err = dev.setCenterFreq(850000000)
-    if err != Error.None:
+    if err != Error.NoError:
         echo("\tsetCenterFreq 850MHz error - ", err)
     else:
         echo("\tsetCenterFreq 850MHz successful...")
@@ -102,7 +102,7 @@ proc main() =
     echo("\tgetTunerType: ", dev.getTunerType())
 
     err = dev.setTunerGainMode(false)
-    if err != Error.None:
+    if err != Error.NoError:
         echo("\tsetTunerGainMode error - ", err)
     else:
         echo("\tsetTunerGainMode successful...")
@@ -116,19 +116,19 @@ proc main() =
     # setDirectSampling(on: bool): Error
 
     err = dev.setTestMode(true)
-    if err == Error.None:
+    if err == Error.NoError:
         echo("\tsetTestMode 'On' successful...")
     else:
         echo("\tsetTestMode 'On' error - ", err)
 
     err = dev.resetBuffer()
-    if err == Error.None:
+    if err == Error.NoError:
         echo("\tresetBuffer successful...\n")
     else:
         echo("\tresetBuffer error - ", err)
 
     let (b, n_read, e) = dev.readSync(DfltBufLen)
-    if err != Error.None:
+    if err != Error.NoError:
         echo("\treadSync Failed - error: ", e)
     else:
         echo("\treadSync num read - ", $n_read)
@@ -136,7 +136,7 @@ proc main() =
             echo("readSync short read, $1 samples lost\n" % $(DfltBufLen-n_read))
 
     err = dev.setTestMode(false)
-    if err == Error.None:
+    if err == Error.NoError:
         echo("\tsetTestMode 'Off' successful...")
     else:
         echo("\tsetTestMode 'Off' error - ", err)
@@ -155,7 +155,7 @@ proc main() =
                         userctx,
                         DfltAsyncBufNum,
                         DfltBufLen)
-    if err != Error.None:
+    if err != Error.NoError:
         echo("\treadAsync call error - ", err)
         ch.send(m)
     else:
