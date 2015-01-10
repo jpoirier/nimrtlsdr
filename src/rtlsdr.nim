@@ -195,12 +195,11 @@ proc SetFreqCorrection*(dev: Context, freq: int): Error =
 
 proc GetFreqCorrection*(dev: Context): int =
     ## *Returns*: the frequency correction value in ppm (parts per million)
-    ## and 0 on success
     return get_freq_correction(dev.ctx)
 
 
 proc GetTunerType*(dev: Context): rtlsdr_tuner =
-    ## *Returns*: the tuner type and 0 on success
+    ## *Returns*: the tuner type.
     return cast[rtlsdr_tuner](get_tuner_type(dev.ctx))
 
 proc GetTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
