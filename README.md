@@ -8,7 +8,7 @@ A Nim wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
 
 # Description
 
-gnimtlsdr is a simple Nim interface to devices supported by the RTL-SDR project, which turns certain USB DVB-T dongles
+nimtlsdr is a simple Nim interface to devices supported by the RTL-SDR project, which turns certain USB DVB-T dongles
 employing the Realtek RTL2832U chipset into a low-cost, general purpose software-defined radio receiver. It wraps all
 the functions in the [librtlsdr library](http://sdr.osmocom.org/trac/wiki/rtl-sdr) (including asynchronous read support).
 
@@ -36,7 +36,7 @@ All functions in librtlsdr are accessible from the nimrtlsdr package:
 See the examples/rtlsdr_eample.nim file:
 
 	$ cd examples
-    $ $ nim c rtlsdr_example.nim
+  $ $ nim c rtlsdr_example.nim
 
 ## Windows
 If you don't want to build the librtlsdr and libusb dependencies from source you can use the librtlsdr pre-built package,
@@ -47,23 +47,26 @@ Building nimrtlsdr on Windows:
 * Download and install the [Nim tools](http://nim-lang.org/download.html).
 * Download the pre-built [rtl-sdr library](http://sdr.osmocom.org/trac/attachment/wiki/rtl-sdr/RelWithDebInfo.zip) and unzip
   it, e.g. to your user folder. Note the path to the header and *.dll files are in the x32 folder.
-* Download nimrtlsdr, but don't install the package:
+* Install the nimrtlsdr package:
 
+  $ nimble install git://github.com/jpoirier/nimrtlsdr
+
+* To build the example file
 	$ git clone git@github.com:jpoirier/nimrtlsdr.git
 
-* Set CFLAGS and LDFLAGS in rtlsdr.go. Open the rtlsdr.go file in an editor, it'll be in go-pkgs\src\github.com\jpoirier\gortlsdr,
-  and set the following two windows specific flags shown below, but with the correct paths from your system. CFLAGS points to
-  the header files and LDFLAGS to the *.dll files:
+  $ cd nimrtlsdr/example
 
-          cgo windows CFLAGS: -IC:/Users/jpoirier/rtlsdr
-          cgo windows LDFLAGS: -lrtlsdr -LC:/Users/jpoirier/rtlsdr/x32
+  if you didn't install the package
 
-* Build gortlsdr:
+    $ nim c --path:../src -o:rtlsdr_example rtlsdr_example
 
-          go install github.com/jpoirier/gortlsdr
+  otherwise:
 
-* Insert the DVB-T/DAB/FM dongle into a USB port, open a shell window in nimble\pkgs\src\github.com\jpoirier\gortlsdr and run
-  the example program: go run rtlsdr_example.go. Note, the pre-built rtl-sdr package contains several test executables as well.
+    $ nim c -o:rtlsdr_example rtlsdr_example
+
+
+* Insert the DVB-T/DAB/FM dongle into a USB port and run
+  the rtlsdr_example example program.
 
 
 # Credit
