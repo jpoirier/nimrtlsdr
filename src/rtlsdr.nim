@@ -224,9 +224,9 @@ proc SetTunerGain*(dev: Context, gain: int): Error =
     ##      240, 290, 340, 420, 430, 450, 470, 490
     ##
     ## *Returns*: 0 on success
-    if gain in gains_list:
-        return cast[Error](set_tuner_gain(dev.ctx, gain))
-    return ErrorInvalidParam
+    if gain notin gains_list:
+        return ErrorInvalidParam
+    return cast[Error](set_tuner_gain(dev.ctx, gain))
 
 proc GetTunerGain*(dev: Context): int =
     ## *Returns*: The configured tuner gain
