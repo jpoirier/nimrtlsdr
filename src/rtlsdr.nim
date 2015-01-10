@@ -25,46 +25,42 @@ const
     minBufLen* = 512
     maxBufLen* = (256 * 16384)
 
-type
-    Error* {.size: sizeof(int).} = enum
-        OffsetTuningModeError = (-13, "getting offset tuning mode")
-        NotSupportedError = (-12, "operation not supported or unimplemented on this platform")
-        NoMemError = (-11, "insufficient memory")
-        InterruptedError = (-10, "system call interrupted (perhaps due to signal)")
-        PipeError = (-9, "pipe error")
-        OverflowError = (-8, "overflow")
-        TimeoutError = (-7, "operation timed out")
-        BusyError = (-6, "resource busy")
-        NotFoundError = (-5, "entity not found")
-        NoDeviceError = (-4, "no such device (it may have been disconnected)")
-        AccessError = (-3, "access denied (insufficient permissions)")
-        InvalidParamError = (-2, "invalid parameter(s)")
-        IoError = (-1, "input/output error")
-        NoError = (0, "no error")
+type Error* {.size: sizeof(int).} = enum
+    OffsetTuningModeError = (-13, "getting offset tuning mode")
+    NotSupportedError = (-12, "operation not supported or unimplemented on this platform")
+    NoMemError = (-11, "insufficient memory")
+    InterruptedError = (-10, "system call interrupted (perhaps due to signal)")
+    PipeError = (-9, "pipe error")
+    OverflowError = (-8, "overflow")
+    TimeoutError = (-7, "operation timed out")
+    BusyError = (-6, "resource busy")
+    NotFoundError = (-5, "entity not found")
+    NoDeviceError = (-4, "no such device (it may have been disconnected)")
+    AccessError = (-3, "access denied (insufficient permissions)")
+    InvalidParamError = (-2, "invalid parameter(s)")
+    IoError = (-1, "input/output error")
+    NoError = (0, "no error")
 
-type
-    RtlSdrTuner* {.size: sizeof(int).} = enum
-        TunerUknown = (0, "TUNER_UNKNOWN")
-        TunerE4000 = (1, "TUNER_E4000")
-        TunerFC0012 = (2, "TUNER_FC0012")
-        TunerFC0013 = (3, "TUNER_FC0013")
-        TunerFC2580 = (4, "TUNER_FC2580")
-        TunerR820T = (5, "TUNER_R820T")
-        TunerR828D = (6, "TUNER_R828D")
+type RtlSdrTuner* {.size: sizeof(int).} = enum
+    TunerUknown = (0, "TUNER_UNKNOWN")
+    TunerE4000 = (1, "TUNER_E4000")
+    TunerFC0012 = (2, "TUNER_FC0012")
+    TunerFC0013 = (3, "TUNER_FC0013")
+    TunerFC2580 = (4, "TUNER_FC2580")
+    TunerR820T = (5, "TUNER_R820T")
+    TunerR828D = (6, "TUNER_R828D")
 
-type
-    SamplingState* {.size: sizeof(int).} = enum
-        SamplingNone = (0, "None")
-        SamplingIADC = (1, "IADC")
-        SamplingQADC = (2, "QADC")
+type SamplingState* {.size: sizeof(int).} = enum
+    SamplingNone = (0, "None")
+    SamplingIADC = (1, "IADC")
+    SamplingQADC = (2, "QADC")
 
 type
     devObjPtr* = ptr devObj
     devObj* {.final.} = object
 
-type
-    Context* = object of RootObj
-        ctx*: devObjPtr
+type Context* = object of RootObj
+    ctx*: devObjPtr
 
 type
     readAsyncCbProc* = proc (buf: ptr uint8; len: uint32; ctx: ctxPointer) {.fastcall.}
@@ -270,11 +266,11 @@ proc setTestMode*(dev: Context, testModeOn: bool): Error =
     return cast[Error](set_testmode(dev.ctx, cast[int](testModeOn)))
 
 
-proc setAgcMode*(dev: Context, AGCModeOn: bool): Error =
+proc setAgcMode*(dev: Context, agcModeOn: bool): Error =
     ## Enables or disables the internal digital AGC of the RTL2832.
     ##
     ## *Returns*: 0 on success
-    return  cast[Error](set_agc_mode(dev.ctx, cast[int](AGCModeOn)))
+    return  cast[Error](set_agc_mode(dev.ctx, cast[int](agcModeOn)))
 
 proc setDirectSampling*(dev: Context, on: bool): Error =
     ## Enables or disables the direct sampling mode. When enabled,
@@ -311,25 +307,25 @@ proc resetBuffer*(dev: Context): Error =
     ##
     return cast[Error](reset_buffer(dev.ctx))
 
-proc readSync*(dev: Context, length: int): tuple[buf: seq[char], n_read: int, err: Error] =
+proc readSync*(dev: Context, length: int): tuple[buf: seq[char], nRead: int, err: Error] =
     ##
     result.buf = newseq[char](length)
     result.err = cast[Error](read_sync(dev.ctx,
                                         cast[pointer](addr(result.buf[0])),
                                         length,
-                                        addr(result.n_read)))
+                                        addr(result.nRead)))
 
-proc readAsync*(dev: Context, f: readAsyncCbProc, ctx: ctxPointer, buf_num, buf_len: int): Error =
+proc readAsync*(dev: Context, f: readAsyncCbProc, ctx: ctxPointer, bufNum, bufLen: int): Error =
     ## Reads samples from the device asynchronously. This function blocks
     ## until canceled via CancelAsync
     ##
-    ## Optional buf_num buffer count, buf_num * buf_len = overall buffer size,
+    ## Optional bufNum buffer count, bufNum * bufLen = overall buffer size,
     ## set to 0 for default buffer count (32).
-    ## Optional buf_len buffer length, must be multiple of 512, set to 0 for
+    ## Optional bufLen buffer length, must be multiple of 512, set to 0 for
     ## default buffer length (16 * 32 * 512).
     ##
     ## *Returns*: 0 on success
-    return cast[Error](read_async(dev.ctx, f, ctx, cast[uint32](buf_num), cast[uint32](buf_len)))
+    return cast[Error](read_async(dev.ctx, f, ctx, cast[uint32](bufNum), cast[uint32](bufLen)))
 
 proc cancelAsync*(dev: Context): Error =
     ## Cancels all pending asynchronous operations on the device.
