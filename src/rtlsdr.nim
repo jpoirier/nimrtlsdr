@@ -184,7 +184,7 @@ proc SetCenterFreq*(dev: Context, freq: int): Error =
     return cast[Error](set_center_freq(dev.ctx, cast[uint32](freq)))
 
 proc GetCenterFreq*(dev: Context): int =
-    ## *Returns*: the tuned frequency in Hz and 0 on success
+    ## *Returns*: the tuned frequency in Hz.
     return cast[int](get_center_freq(dev.ctx))
 
 proc SetFreqCorrection*(dev: Context, freq: int): Error =
