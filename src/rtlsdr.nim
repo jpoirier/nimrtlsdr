@@ -20,8 +20,8 @@ const
     DfltReadSz* = 1024
     CrystalFreq* = 28800000
     DfltSampleRate* = 2048000
-    DfltAsyncBufNum* = 32
-    DfltBufLen* = (16 * 16384)
+    DfltAsyncBufNum* = 15
+    DfltBufLen* = (16 * 32)
     MinBufLen* = 512
     MaxBufLen* = (256 * 16384)
 
@@ -40,7 +40,7 @@ type
         ErrorAccess = (-3, "access denied (insufficient permissions)")
         ErrorInvalidParam = (-2, "invalid parameter(s)")
         ErrorIo = (-1, "input/output error")
-        Success = (0, "success")
+        None = (0, "no error")
 
 type
     rtlsdr_tuner* {.size: sizeof(int).} = enum
@@ -67,7 +67,7 @@ type
         ctx*: pdev_t
 
 type
-    read_async_cb_t* = proc (buf: ptr uint8; len: uint32; ctx: pointer) {.cdecl.}
+    read_async_cb_t* = proc (buf: ptr uint8; len: uint32; ctx: UserCtx) {.fastcall.}
 
 const
     gains_list*: array[18, int] = [-10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
@@ -88,20 +88,20 @@ proc GetDeviceName*(index: int): string =
 
 proc GetDeviceUsbStrings*(index: int): tuple[manufact, product, serial: string, err: Error] =
     ## *Returns*: the USB device strings for index and 0 on success
-    var m: array[0..256, char]
-    var p: array[0..256, char]
-    var s: array[0..256, char]
+    var m: array[0..257, char]
+    var p: array[0..257, char]
+    var s: array[0..257, char]
     var e = get_device_usb_strings(cast[uint32](index),
-                                    cast[ptr char](addr(m[0])),
-                                    cast[ptr char](addr(p[0])),
-                                    cast[ptr char](addr(s[0])))
+                                    addr(m[0]),
+                                    addr(p[0]),
+                                    addr(s[0]))
     ($m, $p, $s, cast[Error](e))
 
 proc GetIndexBySerial*(serial: string): tuple[index: int, err: Error] =
     ## *Returns*: the device index for USB string serial and 0 on success
     result.index = get_index_by_serial(serial)
     if result.index >= 0:
-        result.err = Success
+        result.err = None
     else:
         result.err = cast[Error](result.index)
 
@@ -138,7 +138,7 @@ proc GetXtalFreq*(dev: Context): tuple[rtl_freq, tuner_freq: int, err: Error] =
     ## Usually both ICs use the same clock. Frequency values are in Hz.
     result.err = cast[Error](get_xtal_freq(dev.ctx, cast[ptr uint32](addr(result.rtl_freq)), cast[ptr uint32](addr(result.tuner_freq))))
 
-proc GetUsbStrings*(dev: Context, index: int): tuple[manufact, product, serial: string, err: Error] =
+proc GetUsbStrings*(dev: Context): tuple[manufact, product, serial: string, err: Error] =
     ## *Returns*: dev's USB strings and 0 on success
     var m: array[0..256, char]
     var p: array[0..256, char]
@@ -170,7 +170,7 @@ proc ReadEeprom*(dev: Context, offset: uint8, length: uint16): tuple[data: seq[u
     var e = read_eeprom(dev.ctx, addr(result.data[0]), offset, length)
     if e >= 0:
         result.cnt = e
-        result.err = Success
+        result.err = None
     else:
         result.cnt = e
         result.err = cast[Error](e)
@@ -204,7 +204,7 @@ proc GetTunerType*(dev: Context): rtlsdr_tuner =
 proc GetTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
     ## *Returns*: a list of gains, in tenths of dB, supported by the tuner
     ## and 0 on success. E.g. 115 means 11.5 dB.
-    result.err = Success
+    result.err = None
     var i = cast[int](get_tuner_gains(dev.ctx, cast[ptr int](0)))
     if i < 0:
         result.err = cast[Error](i)
@@ -298,7 +298,7 @@ proc SetOffsetTuning*(dev: Context, enable: bool): Error =
 
 proc GetOffsetTuning*(dev: Context): tuple[enabled: bool, err: Error] =
     ## *Returns*: the state of the offset tuning mode
-    result.err = Success
+    result.err = None
     var i = get_offset_tuning(dev.ctx)
     if i == -1:
         result.err = ErrorOffsetTuningMode
@@ -314,7 +314,10 @@ proc ResetBuffer*(dev: Context): Error =
 proc ReadSync*(dev: Context, length: int): tuple[buf: seq[char], n_read: int, err: Error] =
     ##
     result.buf = newseq[char](length)
-    result.err = cast[Error](read_sync(dev.ctx, cast[ptr char](addr(result.buf)), length, cast[ptr int](addr(result.n_read))))
+    result.err = cast[Error](read_sync(dev.ctx,
+                                        cast[pointer](addr(result.buf[0])),
+                                        length,
+                                        addr(result.n_read)))
 
 proc ReadAsync*(dev: Context, f: read_async_cb_t, userctx: UserCtx, buf_num, buf_len: int): Error =
     ## Reads samples from the device asynchronously. This function blocks
