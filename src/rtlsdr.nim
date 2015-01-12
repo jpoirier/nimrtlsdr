@@ -61,7 +61,7 @@ type
     DevObj* {.final.} = object
 
 type Context* = object of RootObj
-    ctx*: DevObjPtr
+    ctx: DevObjPtr
 
 type
     readAsyncCbProc* = proc (buf: ptr uint8; len: uint32;
