@@ -50,9 +50,9 @@ type RtlSdrTuner* {.size: sizeof(int).} = enum
     TunerR820T = (5, "TUNER_R820T")
     TunerR828D = (6, "TUNER_R828D")
 
-type SamplingState* {.size: sizeof(int).} = enum
+type SamplingMode* {.size: sizeof(int).} = enum
     SamplingError = (-1, "Error")
-    SamplingNone = (0, "Disabled")
+    SamplingOff = (0, "Disabled")
     SamplingIADC = (1, "I-ADC Enabled")
     SamplingQADC = (2, "Q-ADC Enabled")
 
@@ -215,7 +215,7 @@ proc getTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
     else:
         result.gains = newseq[int](i)
         discard rtlsdr_get_tuner_gains(dev.ctx,
-            cast[ptr int](addr(result.gains[0])))
+                                       cast[ptr int](addr(result.gains[0])))
 
 proc setTunerGain*(dev: Context, gain: int): Error =
     ## Sets the tuner gain. Manual gain mode must be enabled for this to work.
@@ -280,18 +280,18 @@ proc setAgcMode*(dev: Context, agcModeOn: bool): Error =
     ## *Returns*: NoError on success
     result =  cast[Error](rtlsdr_set_agc_mode(dev.ctx, cast[int](agcModeOn)))
 
-proc setDirectSampling*(dev: Context, on: bool): Error =
+proc setDirectSampling*(dev: Context, mode: SamplingMode): Error =
     ## Enables or disables the direct sampling mode. When enabled,
     ## the IF mode of the RTL2832 is activated, and rtlsdr_set_center_freq()
     ## will control the IF-frequency of the DDC, which can be used to tune
     ## from 0 to 28.8 MHz  (xtal frequency of the RTL2832).
     ##
     ## *Returns*: NoError on success
-    result = cast[Error](rtlsdr_set_direct_sampling(dev.ctx, cast[int](on)))
+    result = cast[Error](rtlsdr_set_direct_sampling(dev.ctx, cast[int](mode)))
 
-proc getDirectSampling*(dev: Context): SamplingState =
+proc getDirectSampling*(dev: Context): SamplingMode =
     ## *Returns*: the state of the direct sampling mode.
-    result = cast[SamplingState](rtlsdr_get_direct_sampling(dev.ctx))
+    result = cast[SamplingMode](rtlsdr_get_direct_sampling(dev.ctx))
 
 proc setOffsetTuning*(dev: Context, enable: bool): Error =
     ## Enables or disables offset tuning for zero-IF tuners, which

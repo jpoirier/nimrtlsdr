@@ -11,9 +11,9 @@ var chan: TChannel[Msg]
 
 proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
     ## The rtlsdr callback function.
-    var intit {.global.}: bool = false
-    if intit == false:
-        intit = true
+    var do_ping {.global.}: bool = true
+    if do_ping == true:
+        do_ping = false
         var msg: Msg
         msg.s = true
         chan.send(msg)  # Send a ping to asyncStop
@@ -139,9 +139,9 @@ proc main() =
         echo("\tsetAgcMode successful...")
 
     #---------- Get/Set Direct Sampling ----------
-    let samplingState = dev.getDirectSampling()
-    echo("\tgetDirectSampling - ", samplingState)
-    err = dev.setDirectSampling(false) # set to off
+    let samplingMode = dev.getDirectSampling()
+    echo("\tgetDirectSampling - ", samplingMode)
+    err = dev.setDirectSampling(SamplingOff)
     if err == NoError:
         echo("\tsetDirectSampling 'Off' successful...")
     else:
