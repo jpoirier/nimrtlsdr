@@ -21,12 +21,12 @@ proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
 
 proc asyncStop(dev: Context) =
     ## Pends for a ping from the rtlsdrCb function callback,
-    ## and when received it cancels the async callback.
+    ## and when received cancel the async callback.
     echo("asyncStop running...")
     discard chan.recv()
     echo("Received ping from rtlsdrCb, calling cancelAsync")
-    var err = dev.cancelAsync()
-    if ord(err) != 0:
+    let err = dev.cancelAsync()
+    if err != NoError:
         echo("CancelAsync failed - ", err)
     else:
         echo("CancelAsync successful...")
@@ -39,6 +39,7 @@ proc main() =
         return
     else:
         for i in 0..(cnt-1):
+            # manufact, product, serial, error
             let (m, p, s, e) = getDeviceUsbStrings(i)
             echo("Usb Strings: $1, $2, $3, $4" % [m, p, s, $e])
 
@@ -54,9 +55,9 @@ proc main() =
     defer: discard dev.closeDev()
 
     #---------- Device Strings ----------
-    var (manufact, product, serial, err) = dev.getUsbStrings()
-    if err != NoError:
-        echo("\tgetUsbStrings error - ", err)
+    let (manufact, product, serial, er) = dev.getUsbStrings()
+    if er != NoError:
+        echo("\tgetUsbStrings error - ", er)
     else:
         echo("\tgetUsbStrings - $1, $2, $3\n" %
             [manufact, product, serial])
@@ -169,9 +170,9 @@ proc main() =
     else:
         echo("\tresetBuffer error - ", err)
 
-    let (b, numRead, er) = dev.readSync(dfltBufLen)
+    let (b, numRead, ere) = dev.readSync(dfltBufLen)
     if er != NoError:
-        echo("\treadSync Failed - error: ", er)
+        echo("\treadSync Failed - error: ", ere)
     else:
         echo("\treadSync num read - ", $numRead)
         if numRead < dfltBufLen:
@@ -180,8 +181,6 @@ proc main() =
     # ReadAsync blocks until CancelAsync is called, so spawn
     # a thread that'll wait for the async-read callback to send a
     # ping once it has started.
-    var msg: Msg
-    msg.s = true
     open(chan)
     spawn asyncStop(dev)
 
@@ -192,6 +191,8 @@ proc main() =
                         dfltBufLen)
     if err != NoError:
         echo("\treadAsync call error - ", err)
+        var msg: Msg
+        msg.s = true
         chan.send(msg)
     else:
         echo("\treadAsync call successful...")
