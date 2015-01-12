@@ -81,13 +81,13 @@ proc main() =
 
     # rtl_freq, tuner_freq, err
     let xtalFreq = dev.getXtalFreq()
-    if ord(xtalFreq.err) != 0:
+    if xtalFreq.err != Error.NoError:
         echo("\tgetXtalFreq error - ", xtalFreq.err)
     else:
         echo("\tgetXtalFreq - Rtl: $1, Tuner: $2" %
-            [$xtalFreq.rtl_freq, $xtalFreq.tuner_freq])
+            [$xtalFreq.rtlFreq, $xtalFreq.tunerFreq])
 
-    err = dev.setCenterFreq(850000000)
+    err = dev.setCenterFreq(850_000_000)
     if err != Error.NoError:
         echo("\tsetCenterFreq 850MHz error - ", err)
     else:
@@ -159,5 +159,6 @@ proc main() =
     sync()
     close(chan)
     echo("Done...")
+
 
 main()

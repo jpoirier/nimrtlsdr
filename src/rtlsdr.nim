@@ -131,14 +131,14 @@ proc setXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
                                             cast[uint32](tuner_freq)))
 
 proc getXtalFreq*(dev: Context):
-    tuple[rtl_freq, tuner_freq: int, err: Error] =
+    tuple[rtlFreq, tunerFreq: int, err: Error] =
     ## *Returns*: the crystal oscillator frequencies for the RTL2832 and the
     ## tuner IC ## *Returns*: 0 on success
     ##
     ## Usually both ICs use the same clock. Frequency values are in Hz.
     result.err = cast[Error](rtlsdr_get_xtal_freq(dev.ctx,
-                                    cast[ptr uint32](addr(result.rtl_freq)),
-                                    cast[ptr uint32](addr(result.tuner_freq))))
+                                    cast[ptr uint32](addr(result.rtlFreq)),
+                                    cast[ptr uint32](addr(result.tunerFreq))))
 
 proc getUsbStrings*(dev: Context):
     tuple[manufact, product, serial: string, err: Error] =
@@ -314,14 +314,14 @@ proc resetBuffer*(dev: Context): Error =
     ##
     result = cast[Error](rtlsdr_reset_buffer(dev.ctx))
 
-proc readSync*(dev: Context, length: int): tuple[buf: seq[char],
-    nRead: int, err: Error] =
+proc readSync*(dev: Context, length: int):
+    tuple[buf: seq[char], numRead: int, err: Error] =
     ##
     result.buf = newseq[char](length)
     result.err = cast[Error](rtlsdr_read_sync(dev.ctx,
         cast[pointer](addr(result.buf[0])),
         length,
-        addr(result.nRead)))
+        addr(result.numRead)))
 
 proc readAsync*(dev: Context, f: readAsyncCbProc,
     userCtx: UserCtxPtr, bufNum, bufLen: int): Error =
