@@ -10,7 +10,7 @@ else:
     const rtlsdr_lib = "librtlsdr.so"
 
 type UserCtxPtr* = pointer
-    ## User define and explicitly typecast in the user's callback procedure.
+    ## User defined and explicitly typecast in the user's callback procedure.
 
 const
     ## Default parameter settings
@@ -110,7 +110,7 @@ proc openDev*(index: int): tuple[dev: Context, err: Error] =
 proc closeDev*(dev: Context): Error =
     ## Closes dev.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     return cast[Error](rtlsdr_close(dev.ctx))
 
 
@@ -126,14 +126,14 @@ proc setXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     ## NOTE: Call this function only if you fully understand the implications.
     ## Values are in Hz.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     return cast[Error](rtlsdr_set_xtal_freq(dev.ctx, cast[uint32](rtl_freq),
                                             cast[uint32](tuner_freq)))
 
 proc getXtalFreq*(dev: Context):
     tuple[rtlFreq, tunerFreq: int, err: Error] =
     ## *Returns*: the crystal oscillator frequencies for the RTL2832 and the
-    ## tuner IC ## *Returns*: 0 on success
+    ## tuner IC and NoError on success
     ##
     ## Usually both ICs use the same clock. Frequency values are in Hz.
     result.err = cast[Error](rtlsdr_get_xtal_freq(dev.ctx,
@@ -142,7 +142,7 @@ proc getXtalFreq*(dev: Context):
 
 proc getUsbStrings*(dev: Context):
     tuple[manufact, product, serial: string, err: Error] =
-    ## *Returns*: dev's USB strings and 0 on success
+    ## *Returns*: dev's USB strings and NoError on success
     var m: array[0..256, char]
     var p: array[0..256, char]
     var s: array[0..256, char]
@@ -156,7 +156,7 @@ proc writeEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
     ## - ``data``: the data to be written
     ## - ``offset``: the address where the data is to be written
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     return cast[Error](rtlsdr_write_eeprom(dev.ctx, cast[ptr uint8](addr(data)),
                                            offset, cast[uint16](data.len)))
 
@@ -169,7 +169,7 @@ proc readEeprom*(dev: Context, offset: uint8, length: uint16):
     ## - ``length``: The length of the data to be read
     ##
     ## *Returns*: A buffer containing data read from the EEPROM, the count of
-    ## the data actually read into the buffer, 0 on success
+    ## the data actually read into the buffer, and NoError on success
     result.data = newseq[uint8](int(length))
     let e = rtlsdr_read_eeprom(dev.ctx, addr(result.data[0]), offset, length)
     result.cnt = e
@@ -181,7 +181,7 @@ proc readEeprom*(dev: Context, offset: uint8, length: uint16):
 proc setCenterFreq*(dev: Context, freq: int): Error =
     ## Sets the center frequency to freq Hz.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_center_freq(dev.ctx, cast[uint32](freq)))
 
 proc getCenterFreq*(dev: Context): int =
@@ -191,7 +191,7 @@ proc getCenterFreq*(dev: Context): int =
 proc setFreqCorrection*(dev: Context, freq: int): Error =
     ## Sets the frequency correction value to freq Hz.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_freq_correction(dev.ctx, freq))
 
 proc getFreqCorrection*(dev: Context): int =
@@ -205,7 +205,7 @@ proc getTunerType*(dev: Context): RtlSdrTuner =
 
 proc getTunerGains*(dev: Context): tuple[gains: seq[int], err: Error] =
     ## *Returns*: a list of gains, in tenths of dB, supported by the tuner
-    ## and 0 on success. E.g. 115 means 11.5 dB.
+    ## and NoError on success. E.g. 115 means 11.5 dB.
     result.err = NoError
     let i = cast[int](rtlsdr_get_tuner_gains(dev.ctx, cast[ptr int](0)))
     if i < 0:
@@ -225,7 +225,7 @@ proc setTunerGain*(dev: Context, gain: int): Error =
     ##      -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
     ##      240, 290, 340, 420, 430, 450, 470, 490
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     if gain notin Gains_List:
         result = InvalidParamError
     else:
@@ -245,21 +245,21 @@ proc setTunerIfGain*(dev: Context, stage, gain: int): Error =
     ## - ``stage``: intermediate frequency gain stage number (1 to 6 for E4000)
     ## - ``gain``: in tenths of a dB, -30 means -3.0 dB.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_tuner_if_gain(dev.ctx, stage, gain))
 
 proc setTunerGainMode*(dev: Context, manualMode: bool): Error =
     ## Sets the gain mode (automatic or manual) for the device.
     ## Manual gain mode must be enabled for the gain setter function to work.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_tuner_gain_mode(dev.ctx,
                                                     cast[int](manualMode)))
 
 proc setSampleRate*(dev: Context, rate: int): Error =
     ## Selects the baseband filters according to the sample rate in Hz
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_sample_rate(dev.ctx, cast[uint32](rate)))
 
 proc getSampleRate*(dev: Context): int =
@@ -270,14 +270,14 @@ proc setTestMode*(dev: Context, testModeOn: bool): Error =
     ## Enables test mode that returns an 8 bit counter instead of samples.
     ## The counter is generated inside the RTL2832.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_testmode(dev.ctx, cast[int](testModeOn)))
 
 
 proc setAgcMode*(dev: Context, agcModeOn: bool): Error =
     ## Enables or disables the internal digital AGC of the RTL2832.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result =  cast[Error](rtlsdr_set_agc_mode(dev.ctx, cast[int](agcModeOn)))
 
 proc setDirectSampling*(dev: Context, on: bool): Error =
@@ -286,7 +286,7 @@ proc setDirectSampling*(dev: Context, on: bool): Error =
     ## will control the IF-frequency of the DDC, which can be used to tune
     ## from 0 to 28.8 MHz  (xtal frequency of the RTL2832).
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_direct_sampling(dev.ctx, cast[int](on)))
 
 proc getDirectSampling*(dev: Context): SamplingState =
@@ -297,16 +297,18 @@ proc setOffsetTuning*(dev: Context, enable: bool): Error =
     ## Enables or disables offset tuning for zero-IF tuners, which
     ## avoid problems caused by the DC offset of the ADCs and 1/f noise.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_set_offset_tuning(dev.ctx, cast[int](enable)))
 
 proc getOffsetTuning*(dev: Context): tuple[enabled: bool, err: Error] =
     ## *Returns*: the state of the offset tuning mode
-    result.err = NoError
     let i = rtlsdr_get_offset_tuning(dev.ctx)
     if i == -1:
         result.err = OffsetTuningModeError
+    else:
+        result.err = NoError
     result.enabled = cast[bool](i)
+
 
 ## streaming functions
 
@@ -319,9 +321,9 @@ proc readSync*(dev: Context, length: int):
     ##
     result.buf = newseq[char](length)
     result.err = cast[Error](rtlsdr_read_sync(dev.ctx,
-        cast[pointer](addr(result.buf[0])),
-        length,
-        addr(result.numRead)))
+                                              cast[pointer](addr(result.buf[0])),
+                                              length,
+                                              addr(result.numRead)))
 
 proc readAsync*(dev: Context, f: readAsyncCbProc,
     userCtx: UserCtxPtr, bufNum, bufLen: int): Error =
@@ -333,12 +335,15 @@ proc readAsync*(dev: Context, f: readAsyncCbProc,
     ## Optional bufLen buffer length, must be multiple of 512, set to 0 for
     ## default buffer length (16 * 32 * 512).
     ##
-    ## *Returns*: 0 on success
-    result = cast[Error](rtlsdr_read_async(dev.ctx, f, userCtx,
-        cast[uint32](bufNum), cast[uint32](bufLen)))
+    ## *Returns*: NoError on success
+    result = cast[Error](rtlsdr_read_async(dev.ctx,
+                                           f,
+                                           userCtx,
+                                           cast[uint32](bufNum),
+                                           cast[uint32](bufLen)))
 
 proc cancelAsync*(dev: Context): Error =
     ## Cancels all pending asynchronous operations on the device.
     ##
-    ## *Returns*: 0 on success
+    ## *Returns*: NoError on success
     result = cast[Error](rtlsdr_cancel_async(dev.ctx))
