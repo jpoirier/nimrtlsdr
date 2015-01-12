@@ -29,15 +29,14 @@ Supported Platforms:
 ## Building nimrtlsdr
 * Download and install [git](http://git-scm.com).
 * Download and install the [Nim tools](http://nim-lang.org/download.html).
-* Download the pre-built [rtl-sdr library](http://sdr.osmocom.org/trac/attachment/wiki/rtl-sdr/RelWithDebInfo.zip) and unzip
-  it, e.g. to your user folder. Note the path to the header and *.dll files are in the x32 folder.
+* Download the pre-built [rtl-sdr library](http://sdr.osmocom.org/trac/attachment/wiki/rtl-sdr/RelWithDebInfo.zip) and install.
 * Install the nimrtlsdr package:
 
   Using nimble:
 
   $ nimble install git://github.com/jpoirier/nimrtlsdr
 
-  $ git clone git@github.com:jpoirier/nimrtlsdr.git
+  $ git clone "git@github.com:jpoirier/nimrtlsdr.git"
 
   Go to the nimrtlsdr/examples folder and...
 
