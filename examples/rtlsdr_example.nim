@@ -11,18 +11,18 @@ var chan: TChannel[Msg]
 
 proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
     ## The rtlsdr callback function.
-    var first {.global.}: bool = false
-    if first == false:
-        first = true
+    var intit {.global.}: bool = false
+    if intit == false:
+        intit = true
         var msg: Msg
         msg.s = true
         chan.send(msg)  # Send a ping to asyncStop
     echo("Length of async-read buffer - ", $len)
 
 proc asyncStop(dev: Context) =
-    echo("asyncStop running...")
     ## Pends for a ping from the rtlsdr callback,
     ## and when received it cancels the async callback.
+    echo("asyncStop running...")
     discard chan.recv()
     echo("Received ping from rtlsdrCb, calling cancelAsync")
     var err = dev.cancelAsync()
@@ -39,33 +39,33 @@ proc main() =
     else:
         for i in 0..(cnt-1):
             let (m, p, s, e) = getDeviceUsbStrings(i)
-            echo("getDeviceUsbStrings $1, $2, $3, $4" % [m, p, s, $e])
+            echo("Usb Strings: $1, $2, $3, $4" % [m, p, s, $e])
 
-    echo("===== Device name: $1 =====" % getDeviceName(0))
+    echo("===== Device name - $1 =====" % getDeviceName(0))
     echo("===== Running tests using device index: 0 =====")
 
-    let openedDev = openDev(0)
-    if openedDev.err != Error.NoError:
-        echo("\tOpenDev failed - ", openedDev.err)
+    var (dev, err) = openDev(0)
+    if err != Error.NoError:
+        echo("\tOpenDev failed - ", err)
         return
 
-    let dev = openedDev.dev
     defer: discard dev.closeDev()
 
-    let u = dev.getUsbStrings()
-    if u.err != Error.NoError:
-        echo("\tgetUsbStrings error - ", u.err)
+    var (manufact, product, serial, err) = dev.getUsbStrings()
+    if err != Error.NoError:
+        echo("\tgetUsbStrings error - ", err)
     else:
-        echo("\tgetUsbStrings - $1, $2, $3\n" % [u.manufact, u.product, u.serial])
+        echo("\tgetUsbStrings - $1, $2, $3\n" %
+            [manufact, product, serial])
 
-    let g = dev.getTunerGains()
-    if g.err != Error.NoError:
-        echo("\tGetTunerGains error - ", g.err)
+    let (gains, e) = dev.getTunerGains()
+    if e != Error.NoError:
+        echo("\tGetTunerGains error - ", e)
     else:
         echo("\tGains: ")
-        echo($g.gains)
+        echo($gains)
 
-    var err = dev.setSampleRate(dfltSampleRate)
+    err = dev.setSampleRate(dfltSampleRate)
     if err != Error.NoError:
         echo("\tsetSampleRate error - ", err)
     else:
@@ -84,7 +84,8 @@ proc main() =
     if ord(xtalFreq.err) != 0:
         echo("\tgetXtalFreq error - ", xtalFreq.err)
     else:
-        echo("\tgetXtalFreq - Rtl: $1, Tuner: $2" % [$xtalFreq.rtl_freq, $xtalFreq.tuner_freq])
+        echo("\tgetXtalFreq - Rtl: $1, Tuner: $2" %
+            [$xtalFreq.rtl_freq, $xtalFreq.tuner_freq])
 
     err = dev.setCenterFreq(850000000)
     if err != Error.NoError:
@@ -122,13 +123,13 @@ proc main() =
     else:
         echo("\tresetBuffer error - ", err)
 
-    let (b, nRead, e) = dev.readSync(dfltBufLen)
-    if e != Error.NoError:
-        echo("\treadSync Failed - error: ", e)
+    let (b, numRead, er) = dev.readSync(dfltBufLen)
+    if er != Error.NoError:
+        echo("\treadSync Failed - error: ", er)
     else:
-        echo("\treadSync num read - ", $nRead)
-        if nRead < dfltBufLen:
-            echo("readSync short read, $1 samples lost\n" % $(dfltBufLen-nRead))
+        echo("\treadSync num read - ", $numRead)
+        if numRead < dfltBufLen:
+            echo("readSync short read, $1 samples lost\n" % $(dfltBufLen-numRead))
 
     err = dev.setTestMode(false)
     if err == Error.NoError:
@@ -157,6 +158,6 @@ proc main() =
 
     sync()
     close(chan)
-    echo("Exiting...")
+    echo("Done...")
 
 main()

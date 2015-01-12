@@ -91,8 +91,8 @@ proc getDeviceUsbStrings*(index: int):
     var m: array[0..257, char]
     var p: array[0..257, char]
     var s: array[0..257, char]
-    let e = rtlsdr_get_device_usb_strings(cast[uint32](index),
-        addr(m[0]), addr(p[0]), addr(s[0]))
+    let e = rtlsdr_get_device_usb_strings(cast[uint32](index), addr(m[0]),
+                                          addr(p[0]), addr(s[0]))
     ($m, $p, $s, cast[Error](e))
 
 proc getIndexBySerial*(serial: string): tuple[index: int, err: Error] =
@@ -127,8 +127,7 @@ proc setXtalFreq*(dev: Context, rtl_freq, tuner_freq: int): Error =
     ## Values are in Hz.
     ##
     ## *Returns*: 0 on success
-    return cast[Error](rtlsdr_set_xtal_freq(dev.ctx,
-                                            cast[uint32](rtl_freq),
+    return cast[Error](rtlsdr_set_xtal_freq(dev.ctx, cast[uint32](rtl_freq),
                                             cast[uint32](tuner_freq)))
 
 proc getXtalFreq*(dev: Context):
@@ -137,8 +136,7 @@ proc getXtalFreq*(dev: Context):
     ## tuner IC ## *Returns*: 0 on success
     ##
     ## Usually both ICs use the same clock. Frequency values are in Hz.
-    result.err = cast[Error](rtlsdr_get_xtal_freq(
-                                    dev.ctx,
+    result.err = cast[Error](rtlsdr_get_xtal_freq(dev.ctx,
                                     cast[ptr uint32](addr(result.rtl_freq)),
                                     cast[ptr uint32](addr(result.tuner_freq))))
 
@@ -159,10 +157,8 @@ proc writeEeprom*(dev: Context, data: var seq[uint8], offset: uint8): Error =
     ## - ``offset``: the address where the data is to be written
     ##
     ## *Returns*: 0 on success
-    return cast[Error](rtlsdr_write_eeprom(dev.ctx,
-                                            cast[ptr uint8](addr(data)),
-                                            offset,
-                                            cast[uint16](data.len)))
+    return cast[Error](rtlsdr_write_eeprom(dev.ctx, cast[ptr uint8](addr(data)),
+                                           offset, cast[uint16](data.len)))
 
 proc readEeprom*(dev: Context, offset: uint8, length: uint16):
     tuple[data: seq[uint8], cnt: int, err: Error] =
