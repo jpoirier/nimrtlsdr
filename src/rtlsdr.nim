@@ -59,13 +59,12 @@ type SamplingState* {.size: sizeof(int).} = enum
 type
     DevObjPtr* = ptr DevObj
     DevObj* {.final.} = object
-
-type Context* = object of RootObj
-    ctx: DevObjPtr
+    Context* = object
+        ctx: DevObjPtr
 
 type
-    readAsyncCbProc* = proc (buf: ptr uint8; len: uint32;
-        userCtx: UserCtxPtr) {.fastcall.}
+    readAsyncCbProc* = proc (buf: ptr uint8; len: uint32; userCtx: UserCtxPtr)
+                            {.fastcall.}
 
 const
     Gains_List*: array[18, int] =
