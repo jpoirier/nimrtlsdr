@@ -20,7 +20,7 @@ Supported Platforms:
 # Installation
 
 ## Dependencies
-* [Nim tools](https://nim-lang.org)
+* [Nim compiler](https://nim-lang.org)
 * [librtlsdr] (http://sdr.osmocom.org/trac/wiki/rtl-sdr) - builds dated after 5/5/12
 * [libusb] (https://www.libusb.org)
 * [git] (https://git-scm.com)
@@ -36,17 +36,17 @@ Supported Platforms:
 
   $ nimble install git://github.com/jpoirier/nimrtlsdr
 
-  $ git clone "git@github.com:jpoirier/nimrtlsdr.git"
+  $ git clone git@github.com:jpoirier/nimrtlsdr.git
 
   Go to the nimrtlsdr/examples folder and...
 
   ...if you installed using nimble:
 
-  $ nim c rtlsdr_example.nim
+    $ nim c rtlsdr_example.nim
 
-  ...if you didn't install using nimble you need to provide the path to the nimrtlsdr source:
+  ...if you didn't install using nimble you need to provide the path to the nimrtlsdr library source:
 
-  $ nim c --path:../src rtlsdr_example.nim
+    $ nim c --path:../src rtlsdr_example.nim
 
 * Insert the DVB-T/DAB/FM dongle into a USB port and run the rtlsdr_example example program.
 
