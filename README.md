@@ -1,7 +1,7 @@
 nimrtlsdr
 =========
 
-A [Nim](https://nim-lang.org) wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
+A [Nim](http://nim-lang.org) wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
 
 
 
@@ -20,7 +20,7 @@ Supported Platforms:
 # Installation
 
 ## Dependencies
-* [Nim compiler](https://nim-lang.org)
+* [Nim compiler](http://nim-lang.org)
 * [librtlsdr] (http://sdr.osmocom.org/trac/wiki/rtl-sdr) - builds dated after 5/5/12
 * [libusb] (https://www.libusb.org)
 * [git] (https://git-scm.com)
