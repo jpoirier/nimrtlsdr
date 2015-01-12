@@ -1,7 +1,7 @@
 nimrtlsdr
 =========
 
-A Nim wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
+A [Nim](https://nim-lang.org) wrapper for librtlsdr (a driver for Realtek RTL2832U based SDR's)
 
 
 
@@ -35,7 +35,7 @@ All functions in librtlsdr are accessible from the nimrtlsdr package:
 See the examples/rtlsdr_eample.nim file:
 
 	$ cd examples
-  $ $ nim c rtlsdr_example.nim
+  $ nim c rtlsdr_example.nim
 
 ## Windows
 If you don't want to build the librtlsdr and libusb dependencies from source you can use the librtlsdr pre-built package,
