@@ -42,14 +42,13 @@ Supported Platforms:
 
   ...if you installed using nimble:
 
-  $ nim c -o:rtlsdr_example rtlsdr_example
+  $ nim c rtlsdr_example.nim
 
-  ...if you didn't install using nimble:
+  ...if you didn't install using nimble you need to provide the path to the nimrtlsdr source:
 
-  $ nim c --path:../src -o:rtlsdr_example rtlsdr_example
+  $ nim c --path:../src rtlsdr_example.nim
 
-* Insert the DVB-T/DAB/FM dongle into a USB port and run
-  the rtlsdr_example example program.
+* Insert the DVB-T/DAB/FM dongle into a USB port and run the rtlsdr_example example program.
 
   $ ./rtlsdr_example
 
