@@ -51,9 +51,10 @@ type RtlSdrTuner* {.size: sizeof(int).} = enum
     TunerR828D = (6, "TUNER_R828D")
 
 type SamplingState* {.size: sizeof(int).} = enum
-    SamplingNone = (0, "None")
-    SamplingIADC = (1, "IADC")
-    SamplingQADC = (2, "QADC")
+    SamplingError = (-1, "Error")
+    SamplingNone = (0, "Disabled")
+    SamplingIADC = (1, "I-ADC Enabled")
+    SamplingQADC = (2, "Q-ADC Enabled")
 
 type
     DevObjPtr* = ptr DevObj
@@ -188,11 +189,11 @@ proc getCenterFreq*(dev: Context): int =
     ## *Returns*: the tuned frequency in Hz.
     result = cast[int](rtlsdr_get_center_freq(dev.ctx))
 
-proc setFreqCorrection*(dev: Context, freq: int): Error =
-    ## Sets the frequency correction value to freq Hz.
+proc setFreqCorrection*(dev: Context, ppm: int): Error =
+    ## Sets the frequency correction value to parts per million (ppm).
     ##
     ## *Returns*: NoError on success
-    result = cast[Error](rtlsdr_set_freq_correction(dev.ctx, freq))
+    result = cast[Error](rtlsdr_set_freq_correction(dev.ctx, ppm))
 
 proc getFreqCorrection*(dev: Context): int =
     ## *Returns*: the frequency correction value in ppm (parts per million)

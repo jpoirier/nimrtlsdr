@@ -20,7 +20,7 @@ proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
     echo("Length of async-read buffer - ", $len)
 
 proc asyncStop(dev: Context) =
-    ## Pends for a ping from the rtlsdr callback,
+    ## Pends for a ping from the rtlsdrCb function callback,
     ## and when received it cancels the async callback.
     echo("asyncStop running...")
     discard chan.recv()
@@ -32,6 +32,7 @@ proc asyncStop(dev: Context) =
         echo("CancelAsync successful...")
 
 proc main() =
+    #---------- Device Check ----------
     let cnt = getDeviceCount()
     if cnt == 0 :
         echo("No devices found, exiting.")
@@ -44,98 +45,137 @@ proc main() =
     echo("===== Device name - $1 =====" % getDeviceName(0))
     echo("===== Running tests using device index: 0 =====")
 
+    #---------- Open Device ----------
     var (dev, err) = openDev(0)
-    if err != Error.NoError:
+    if err != NoError:
         echo("\tOpenDev failed - ", err)
         return
 
     defer: discard dev.closeDev()
 
+    #---------- Device Strings ----------
     var (manufact, product, serial, err) = dev.getUsbStrings()
-    if err != Error.NoError:
+    if err != NoError:
         echo("\tgetUsbStrings error - ", err)
     else:
         echo("\tgetUsbStrings - $1, $2, $3\n" %
             [manufact, product, serial])
 
+    echo("\tgetTunerType: ", dev.getTunerType())
+
+    #---------- Get/Set Tuner Gains ----------
     let (gains, e) = dev.getTunerGains()
-    if e != Error.NoError:
+    if e != NoError:
         echo("\tGetTunerGains error - ", e)
     else:
         echo("\tGains: ")
         echo($gains)
 
+    let tunerGain = dev.getTunerGain()
+    echo("\tgetTunerGain: ", $tunerGain)
+
+    err = dev.setTunerGainMode(true) # manualMode = false
+    if err != NoError:
+        echo("\tsetTunerGainMode error - ", err)
+    else:
+        echo("\tsetTunerGainMode successful...")
+
+    err = dev.setTunerGain(tunerGain)
+    if err != NoError:
+        echo("\tsetTunerGain error - ", err)
+    else:
+        echo("\tsetTunerGain successful...")
+
+    #---------- Get/Set Sample Rate ----------
     err = dev.setSampleRate(dfltSampleRate)
-    if err != Error.NoError:
+    if err != NoError:
         echo("\tsetSampleRate error - ", err)
     else:
         echo("\tsetSampleRate rate: ", $dfltSampleRate)
 
     echo("\tgetSampleRate: ", $dev.getSampleRate())
 
-    # err = dev.setXtalFreq(rtl_freq, tuner_freq)
-    # if err != Error.NoError:
-    #     echo("\setXtalFreq error - ", err)
-    # else:
-    #     echo("\setXtalFreq center freq: $1, Tuner freq: $2" % [rtl_freq, tuner_freq])
-
-    # rtl_freq, tuner_freq, err
+    #---------- Get/Set Xtal Freq ----------
+    # rtlFreq, tuneFreq, err
     let xtalFreq = dev.getXtalFreq()
-    if xtalFreq.err != Error.NoError:
+    if xtalFreq.err != NoError:
         echo("\tgetXtalFreq error - ", xtalFreq.err)
     else:
         echo("\tgetXtalFreq - Rtl: $1, Tuner: $2" %
             [$xtalFreq.rtlFreq, $xtalFreq.tunerFreq])
 
+    err = dev.setXtalFreq(xtalFreq.rtlFreq, xtalFreq.tunerFreq)
+    if err != NoError:
+        echo("\tsetXtalFreq error - ", err)
+    else:
+        echo("\tsetXtalFreq Center freq: $1, Tuner freq: $2" %
+            [$xtalFreq.rtlFreq, $xtalFreq.tunerFreq])
+
+    #---------- Get/Set Center Freq ----------
     err = dev.setCenterFreq(850_000_000)
-    if err != Error.NoError:
+    if err != NoError:
         echo("\tsetCenterFreq 850MHz error - ", err)
     else:
         echo("\tsetCenterFreq 850MHz successful...")
 
     echo("\tgetCenterFreq: ", $dev.getCenterFreq())
-    echo("\tgetFreqCorrection: ", $dev.getFreqCorrection())
-    echo("\tgetTunerType: ", dev.getTunerType())
 
-    err = dev.setTunerGainMode(false)
-    if err != Error.NoError:
-        echo("\tsetTunerGainMode error - ", err)
+    #---------- Get/Set Freq Correction ----------
+    let freqCorr = dev.getFreqCorrection()
+    echo("\tgetFreqCorrection: ", $freqCorr)
+
+    err = dev.setFreqCorrection(freqCorr)
+    if err != NoError:
+        echo("\tsetFreqCorrection error - ", err)
     else:
-        echo("\tsetTunerGainMode successful...")
+        echo("\tsetFreqCorrection successful...")
 
-    echo("\tgetTunerGain: ", $dev.getTunerGain())
+    #---------- Get/Set AGC Mode ----------
+    err = dev.setAgcMode(false) # off
+    if err != NoError:
+        echo("\tsetAgcMode error - ", err)
+    else:
+        echo("\tsetAgcMode successful...")
 
-    # setFreqCorrection(ppm: int): Error
-    # setTunerGain(gain: int): Error
+    #---------- Get/Set Direct Sampling ----------
+    let samplingState = dev.getDirectSampling()
+    echo("\tgetDirectSampling - ", samplingState)
+    err = dev.setDirectSampling(false) # set to off
+    if err == NoError:
+        echo("\tsetDirectSampling 'Off' successful...")
+    else:
+        echo("\tsetDirectSampling 'Off' error - ", err)
+
+    #---------- Get/Set Tuner IF Gain ----------
     # setTunerIfGain(stage, gain: int): Error
-    # setAgcMode(on: bool): Error
-    # setDirectSampling(on: bool): Error
 
+    #---------- Get/Set test mode ----------
     err = dev.setTestMode(true)
-    if err == Error.NoError:
+    if err == NoError:
         echo("\tsetTestMode 'On' successful...")
     else:
         echo("\tsetTestMode 'On' error - ", err)
 
+    err = dev.setTestMode(false)
+    if err == NoError:
+        echo("\tsetTestMode 'Off' successful...")
+    else:
+        echo("\tsetTestMode 'Off' error - ", err)
+
+    #---------- Get/Set misc. streaming ----------
     err = dev.resetBuffer()
-    if err == Error.NoError:
+    if err == NoError:
         echo("\tresetBuffer successful...\n")
     else:
         echo("\tresetBuffer error - ", err)
 
     let (b, numRead, er) = dev.readSync(dfltBufLen)
-    if er != Error.NoError:
+    if er != NoError:
         echo("\treadSync Failed - error: ", er)
     else:
         echo("\treadSync num read - ", $numRead)
         if numRead < dfltBufLen:
             echo("readSync short read, $1 samples lost\n" % $(dfltBufLen-numRead))
-
-    err = dev.setTestMode(false)
-    if err == Error.NoError:
-        echo("\tsetTestMode 'Off' successful...")
-    else:
-        echo("\tsetTestMode 'Off' error - ", err)
 
     # ReadAsync blocks until CancelAsync is called, so spawn
     # a thread that'll wait for the async-read callback to send a
@@ -150,7 +190,7 @@ proc main() =
                         userCtx,
                         dfltAsyncBufNum,
                         dfltBufLen)
-    if err != Error.NoError:
+    if err != NoError:
         echo("\treadAsync call error - ", err)
         chan.send(msg)
     else:
