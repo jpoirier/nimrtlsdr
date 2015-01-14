@@ -9,7 +9,7 @@ type Msg = object
 
 var chan: TChannel[Msg]
 
-proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.cdecl.} =
+proc rtlsdrCb*(buf: ptr uint8, length: uint32, userCtx: UserCtxPtr) {.cdecl.} =
     ## The rtlsdr callback function.
     var do_ping {.global.}: bool = true
     if do_ping == true:
@@ -17,7 +17,7 @@ proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.cdecl.} =
         var msg: Msg
         msg.s = true
         chan.send(msg)  # Send a ping to asyncStop
-    echo("Length of async-read buffer - ", $len)
+    echo("Length of async-read buffer - ", $int(length))
 
 proc asyncStop(dev: Context) =
     ## Pends for a ping from the rtlsdrCb function callback,
