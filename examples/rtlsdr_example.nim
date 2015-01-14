@@ -9,7 +9,7 @@ type Msg = object
 
 var chan: TChannel[Msg]
 
-proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.fastcall.} =
+proc rtlsdrCb*(buf: ptr uint8, len: uint32, userCtx: UserCtxPtr) {.cdecl.} =
     ## The rtlsdr callback function.
     var do_ping {.global.}: bool = true
     if do_ping == true:

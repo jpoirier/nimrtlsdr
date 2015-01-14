@@ -64,7 +64,7 @@ type
 
 type
     readAsyncCbProc* = proc (buf: ptr uint8; len: uint32; userCtx: UserCtxPtr)
-                            {.fastcall.}
+                            {.cdecl.}
 
 const
     Gains_List*: array[18, int] =
