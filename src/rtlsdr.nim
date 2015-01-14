@@ -63,7 +63,7 @@ type
         ctx: DevObjPtr
 
 type
-    readAsyncCbProc* = proc (buf: ptr uint8; len: uint32; userCtx: UserCtxPtr)
+    readAsyncCbProc* = proc (buf: ptr uint8; length: uint32; userCtx: UserCtxPtr)
                             {.cdecl.}
 
 const
