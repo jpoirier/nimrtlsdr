@@ -7,7 +7,7 @@ import rtlsdr
 type Msg = object
     s: bool
 
-var chan: TChannel[Msg]
+var chan: Channel[Msg]
 
 proc rtlsdrCb*(buf: ptr uint8, length: uint32, userCtx: UserCtxPtr) {.cdecl.} =
   ## The rtlsdr callback function.
